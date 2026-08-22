@@ -1,54 +1,470 @@
-import React, { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import logo from "../assets/logo.png";
 
+const API_URL = "http://localhost:5000/api/hotels";
+
+/* =========================================================
+   SEARCH BOX
+   ========================================================= */
+const SearchBox = ({
+  mobile = false,
+  searchTerm,
+  setSearchTerm,
+  hotels,
+  onHotelSelect,
+  onSearchSubmit,
+  setIsMobileMenuOpen,
+}) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  /* =======================================================
+     FILTER HOTELS
+     ======================================================= */
+  const filteredHotels =
+    searchTerm.trim().length > 0
+      ? hotels
+          .filter((hotel) => {
+            const search = searchTerm.toLowerCase().trim();
+
+            const hotelName = String(
+              hotel.name || hotel.hotelName || hotel.title || "",
+            ).toLowerCase();
+
+            const city = String(
+              hotel.city || hotel.location || hotel.address || "",
+            ).toLowerCase();
+
+            return hotelName.includes(search) || city.includes(search);
+          })
+          .slice(0, 6)
+      : [];
+
+  /* =======================================================
+     INPUT CHANGE
+     ======================================================= */
+  const handleChange = (e) => {
+    const value = e.target.value;
+
+    setSearchTerm(value);
+
+    if (value.trim()) {
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  /* =======================================================
+     INPUT FOCUS
+     ======================================================= */
+  const handleFocus = () => {
+    if (searchTerm.trim()) {
+      setShowSuggestions(true);
+    }
+  };
+
+  /* =======================================================
+     SELECT HOTEL
+     ======================================================= */
+  const handleSelect = (hotel) => {
+    const hotelId = hotel._id || hotel.id;
+
+    setShowSuggestions(false);
+    setSearchTerm("");
+    setIsMobileMenuOpen(false);
+
+    onHotelSelect(hotel);
+
+    console.log("Selected Hotel:", hotel);
+    console.log("Hotel ID:", hotelId);
+  };
+
+  /* =======================================================
+     SUBMIT SEARCH
+     ======================================================= */
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const query = searchTerm.trim();
+
+    if (!query) {
+      return;
+    }
+
+    setShowSuggestions(false);
+    setIsMobileMenuOpen(false);
+
+    onSearchSubmit(query);
+  };
+
+  /* =======================================================
+     CLICK OUTSIDE
+     ======================================================= */
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest(".hotel-search-container")) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div
+      className={`hotel-search-container relative ${
+        mobile ? "w-full" : "w-auto"
+      }`}
+    >
+      {/* =================================================
+          SEARCH FORM
+      ================================================= */}
+      <form onSubmit={handleSubmit}>
+        {/* Search Icon */}
+        <svg
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
+
+        {/* Search Input */}
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          placeholder="Search hotels..."
+          autoComplete="off"
+          className={`
+            bg-[#EBF3FE]
+            text-gray-700
+            outline-none
+            rounded-full
+            transition-all
+            focus:ring-2
+            focus:ring-blue-500/20
+            ${
+              mobile
+                ? "text-sm w-full pl-9 pr-4 py-2.5"
+                : "text-xs w-48 lg:w-56 pl-9 pr-4 py-2.5"
+            }
+          `}
+        />
+      </form>
+
+      {/* =================================================
+          SEARCH DROPDOWN
+      ================================================= */}
+      {showSuggestions && searchTerm.trim() && (
+        <div
+          className={`
+            absolute
+            top-full
+            left-0
+            mt-2
+            bg-white
+            rounded-2xl
+            border
+            border-gray-200
+            shadow-2xl
+            overflow-hidden
+            z-[99999]
+            ${mobile ? "w-full" : "w-[320px]"}
+          `}
+        >
+          {/* Dropdown Header */}
+          <div className="px-4 py-3 border-b border-gray-100">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
+              Hotel Suggestions
+            </p>
+          </div>
+
+          {/* =================================================
+              HOTEL RESULTS
+          ================================================= */}
+          {filteredHotels.length > 0 ? (
+            <>
+              {filteredHotels.map((hotel) => {
+                const hotelName =
+                  hotel.name || hotel.hotelName || hotel.title || "Hotel";
+
+                const city =
+                  hotel.city ||
+                  hotel.location ||
+                  hotel.address ||
+                  "Location unavailable";
+
+                const image =
+                  hotel.image || hotel.imageUrl || hotel.images?.[0] || null;
+
+                const hotelId = hotel._id || hotel.id;
+
+                return (
+                  <button
+                    key={hotelId || hotelName}
+                    type="button"
+                    onMouseDown={(e) => {
+                      // Prevent input from losing focus
+                      e.preventDefault();
+                    }}
+                    onClick={() => handleSelect(hotel)}
+                    className="
+                      w-full
+                      flex
+                      items-center
+                      gap-3
+                      px-4
+                      py-3
+                      text-left
+                      hover:bg-blue-50
+                      transition-colors
+                    "
+                  >
+                    {/* Hotel Image */}
+                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                      {image ? (
+                        <img
+                          src={image}
+                          alt={hotelName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xl">
+                          🏨
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Hotel Information */}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-gray-900 truncate">
+                        {hotelName}
+                      </p>
+
+                      <p className="text-xs text-gray-500 mt-1 truncate">
+                        📍 {city}
+                      </p>
+                    </div>
+
+                    {/* Arrow */}
+                    <svg
+                      className="w-4 h-4 text-gray-400 shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                );
+              })}
+
+              {/* View All */}
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                }}
+                onClick={() => {
+                  setShowSuggestions(false);
+                  setIsMobileMenuOpen(false);
+
+                  onSearchSubmit(searchTerm.trim());
+                }}
+                className="
+                  w-full
+                  px-4
+                  py-3
+                  border-t
+                  border-gray-100
+                  text-sm
+                  font-semibold
+                  text-blue-600
+                  hover:bg-blue-50
+                  transition-colors
+                "
+              >
+                View all results for "{searchTerm}"
+              </button>
+            </>
+          ) : (
+            /* =================================================
+               NO RESULTS
+            ================================================= */
+            <div className="px-4 py-7 text-center">
+              <div className="text-3xl mb-2">🏨</div>
+
+              <p className="text-sm font-semibold text-gray-700">
+                No hotels found
+              </p>
+
+              <p className="text-xs text-gray-400 mt-1">
+                Try another hotel name or city.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* =========================================================
+   NAVBAR
+   ========================================================= */
 const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
-  // Mobile menu ko open/close karne ke liye state
+  const navigate = useNavigate();
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Kaunsa link active hai, usko track karne ke liye state (Default 'home' set kiya hai)
   const [activeLink, setActiveLink] = useState("home");
 
-  // Desktop links ki styling handle karne ka function
+  /* =======================================================
+     HOTEL DATA
+     ======================================================= */
+  const [hotels, setHotels] = useState([]);
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [searchLoading, setSearchLoading] = useState(true);
+
+  /* =======================================================
+     FETCH HOTELS
+     ======================================================= */
+  useEffect(() => {
+    const fetchHotels = async () => {
+      try {
+        setSearchLoading(true);
+
+        const response = await fetch(API_URL);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        console.log("Hotels API:", data);
+
+        if (Array.isArray(data)) {
+          setHotels(data);
+        } else if (Array.isArray(data.hotels)) {
+          setHotels(data.hotels);
+        } else if (Array.isArray(data.data)) {
+          setHotels(data.data);
+        } else {
+          setHotels([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch hotels:", error);
+
+        setHotels([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+
+    fetchHotels();
+  }, []);
+
+  /* =======================================================
+     DESKTOP LINK STYLE
+     ======================================================= */
   const getDesktopLinkStyle = (linkName) => {
     return activeLink === linkName
       ? "text-blue-600 font-semibold border-b-2 border-blue-600 pb-1"
       : "text-gray-600 hover:text-gray-900 transition-colors border-b-2 border-transparent pb-1";
   };
 
-  // Mobile links ki styling handle karne ka function
+  /* =======================================================
+     MOBILE LINK STYLE
+     ======================================================= */
   const getMobileLinkStyle = (linkName) => {
     return activeLink === linkName
       ? "text-blue-600 font-semibold"
       : "text-gray-600 font-medium hover:text-blue-600";
   };
 
-  // Link click handle karne ka function (Mobile menu band karne ke liye bhi)
+  /* =======================================================
+     LINK CLICK
+     ======================================================= */
   const handleLinkClick = (linkName) => {
     setActiveLink(linkName);
-    setIsMobileMenuOpen(false); // Link pe click hote hi mobile menu band ho jayega
+    setIsMobileMenuOpen(false);
+  };
+
+  /* =======================================================
+     SELECT HOTEL
+     ======================================================= */
+  const handleHotelSelect = (hotel) => {
+    const hotelId = hotel._id || hotel.id;
+
+    if (hotelId) {
+      setSearchTerm("");
+      setIsMobileMenuOpen(false);
+
+      navigate(`/hotel/${hotelId}`);
+    } else {
+      navigate("/hotels");
+    }
+  };
+
+  /* =======================================================
+     SEARCH SUBMIT
+     ======================================================= */
+  const handleSearchSubmit = (query) => {
+    if (!query) return;
+
+    setIsMobileMenuOpen(false);
+
+    navigate(`/hotels?search=${encodeURIComponent(query)}`);
   };
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
-      {/* Main Navbar Container */}
+      {/* =================================================
+          MAIN NAVBAR
+      ================================================= */}
       <div className="flex items-center justify-between px-4 lg:px-8 py-2">
-        <div className="flex items-center justify-between px-4 lg:px-8 py-2">
-          {/* 1. Left: Logo */}
-          <div className="flex items-center cursor-pointer">
-            <Link to="/" onClick={() => handleLinkClick("home")}>
-              <svg
-                className="w-8 h-8 lg:w-9 lg:h-9 text-[#00838F]"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M12 2L2 9.5V21H22V9.5L12 2ZM12 4.5L19.5 10.1V19H16.5V13.5C16.5 11 14.5 9 12 9C9.5 9 7.5 11 7.5 13.5V19H4.5V10.1L12 4.5ZM12 11C13.1 11 14 11.9 14 13C14 13.7 13.6 14.3 13 14.7V17H11V14.7C10.4 14.3 10 13.7 10 13C10 11.9 10.9 11 12 11Z" />
-              </svg>
-            </Link>
-          </div>
+        {/* =================================================
+            LOGO
+            MEDIUM SIZE
+        ================================================= */}
+        <div className="flex items-center cursor-pointer shrink-0">
+          <Link to="/" onClick={() => handleLinkClick("home")}>
+            <img
+              src={logo}
+              alt="HotelHub Logo"
+              className="
+                w-[90px]
+                h-[55px]
+                object-contain
+              "
+            />
+          </Link>
         </div>
 
-        {/* 2. Middle: Desktop Navigation Links (Hidden on Mobile) */}
-        {/* Yahan href ki jagah to="/path" lagaya gaya hai */}
+        {/* =================================================
+            DESKTOP NAVIGATION
+        ================================================= */}
         <div className="hidden lg:flex items-center space-x-8 text-sm font-medium">
           <NavLink
             to="/"
@@ -57,6 +473,7 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
           >
             Home
           </NavLink>
+
           <NavLink
             to="/hotels"
             onClick={() => handleLinkClick("hotels")}
@@ -64,6 +481,7 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
           >
             Hotels
           </NavLink>
+
           <NavLink
             to="/experiences"
             onClick={() => handleLinkClick("experiences")}
@@ -71,6 +489,7 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
           >
             Experiences
           </NavLink>
+
           <NavLink
             to="/offers"
             onClick={() => handleLinkClick("offers")}
@@ -78,12 +497,13 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
           >
             Offers
           </NavLink>
+
           <NavLink
             to="/contactus"
             onClick={() => handleLinkClick("contactus")}
             className={getDesktopLinkStyle("contactus")}
           >
-            ContactUs
+            Contact Us
           </NavLink>
 
           {isLoggedIn && (
@@ -97,86 +517,142 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
           )}
         </div>
 
-        {/* 3. Right: Icons & Buttons */}
+        {/* =================================================
+            RIGHT SIDE
+        ================================================= */}
         <div className="flex items-center space-x-3 lg:space-x-4">
-          {/* Search Bar (Desktop Only) */}
-          <div className="relative hidden md:flex items-center">
-            <svg
-              className="w-4 h-4 text-gray-500 absolute left-3.5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search destinations..."
-              className="bg-[#EBF3FE] text-xs text-gray-700 pl-9 pr-4 py-2.5 rounded-full outline-none w-48 lg:w-56 focus:w-64 transition-all"
+          {/* Desktop Search */}
+          <div className="hidden md:flex items-center">
+            <SearchBox
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              hotels={hotels}
+              onHotelSelect={handleHotelSelect}
+              onSearchSubmit={handleSearchSubmit}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
             />
           </div>
 
-          {/* Profile Icon - Show only after login */}
+          {/* Profile */}
           {isLoggedIn && (
-            <>
-              <Link
-                to="/profile"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center text-gray-600 text-sm font-medium"
+            <Link
+              to="/profile"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="
+                hidden
+                lg:flex
+                items-center
+                text-gray-600
+                text-sm
+                font-medium
+                hover:text-blue-600
+                transition-colors
+              "
+            >
+              <svg
+                className="w-5 h-5 mr-1"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  className="w-5 h-5 mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M17.982 18.725A8.97 8.97 0 0012 16.5a8.97 8.97 0 00-5.982 2.225M15 9a3 3 0 11-6 0 3 3 0 016 0zm6 3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Profile
-              </Link>
-            </>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17.982 18.725A8.97 8.97 0 0012 16.5a8.97 8.97 0 00-5.982 2.225M15 9a3 3 0 11-6 0 3 3 0 016 0zm6 3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              Profile
+            </Link>
           )}
 
-          {/* Book Now Button */}
-          {/* <button className="bg-[#0052CC] hover:bg-blue-700 text-white text-xs lg:text-sm font-semibold px-4 py-2 lg:py-2.5 rounded-lg transition-colors shadow-sm whitespace-nowrap">
-            Book Now
-          </button> */}
-
-          {/* Book Now Button */}
-          <button className="bg-[#0052CC] hover:bg-blue-700 text-white text-xs lg:text-sm font-semibold px-4 py-2 lg:py-2.5 rounded-lg transition-colors shadow-sm whitespace-nowrap cursor-pointer">
+          {/* Book Now */}
+          <button
+            onClick={() => navigate("/hotels")}
+            className="
+              hidden
+              sm:block
+              bg-[#0052CC]
+              hover:bg-blue-700
+              text-white
+              text-xs
+              lg:text-sm
+              font-semibold
+              px-4
+              py-2
+              lg:py-2.5
+              rounded-lg
+              transition-colors
+              shadow-sm
+              whitespace-nowrap
+              cursor-pointer
+            "
+          >
             Book Now
           </button>
 
+          {/* Login / Logout */}
           {isLoggedIn ? (
             <button
               onClick={onLogout}
-              className="bg-red-600 hover:bg-red-700 text-white text-xs lg:text-sm font-semibold px-4 py-2 lg:py-2.5 rounded-lg transition-colors shadow-sm whitespace-nowrap cursor-pointer"
+              className="
+                hidden
+                sm:block
+                bg-red-600
+                hover:bg-red-700
+                text-white
+                text-xs
+                lg:text-sm
+                font-semibold
+                px-4
+                py-2
+                lg:py-2.5
+                rounded-lg
+                transition-colors
+                shadow-sm
+                whitespace-nowrap
+                cursor-pointer
+              "
             >
               Logout
             </button>
           ) : (
             <button
               onClick={onLoginClick}
-              className="bg-green-600 hover:bg-green-700 text-white text-xs lg:text-sm font-semibold px-4 py-2 lg:py-2.5 rounded-lg transition-colors shadow-sm whitespace-nowrap cursor-pointer"
+              className="
+                hidden
+                sm:block
+                bg-green-600
+                hover:bg-green-700
+                text-white
+                text-xs
+                lg:text-sm
+                font-semibold
+                px-4
+                py-2
+                lg:py-2.5
+                rounded-lg
+                transition-colors
+                shadow-sm
+                whitespace-nowrap
+                cursor-pointer
+              "
             >
               Login / Sign Up
             </button>
           )}
 
-          {/* Hamburger Menu Button (Mobile Only) */}
+          {/* Mobile Hamburger */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden text-gray-600 hover:text-gray-900 p-1 focus:outline-none"
+            className="
+              lg:hidden
+              text-gray-600
+              hover:text-gray-900
+              p-1
+              focus:outline-none
+            "
+            aria-label="Toggle menu"
           >
             <svg
               className="w-6 h-6"
@@ -203,33 +679,43 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
         </div>
       </div>
 
-      {/* 4. Mobile Menu Dropdown */}
+      {/* =================================================
+          MOBILE MENU
+      ================================================= */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 w-full bg-white border-b border-gray-200 px-4 py-4 shadow-lg z-50 flex flex-col space-y-4">
-          {/* Mobile Search Bar */}
-          <div className="relative w-full flex items-center md:hidden">
-            <svg
-              className="w-4 h-4 text-gray-500 absolute left-3.5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search destinations..."
-              className="bg-[#EBF3FE] text-sm text-gray-700 pl-9 pr-4 py-2.5 rounded-full outline-none w-full"
+        <div
+          className="
+            lg:hidden
+            absolute
+            top-full
+            left-0
+            w-full
+            bg-white
+            border-b
+            border-gray-200
+            px-4
+            py-4
+            shadow-lg
+            z-50
+            flex
+            flex-col
+            space-y-4
+          "
+        >
+          {/* Mobile Search */}
+          <div className="w-full">
+            <SearchBox
+              mobile
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              hotels={hotels}
+              onHotelSelect={handleHotelSelect}
+              onSearchSubmit={handleSearchSubmit}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
             />
           </div>
 
           {/* Mobile Links */}
-          {/* Yahan bhi to="/path" update kiya gaya hai */}
           <NavLink
             to="/"
             onClick={() => handleLinkClick("home")}
@@ -237,6 +723,7 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
           >
             Home
           </NavLink>
+
           <NavLink
             to="/hotels"
             onClick={() => handleLinkClick("hotels")}
@@ -244,6 +731,7 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
           >
             Hotels
           </NavLink>
+
           <NavLink
             to="/experiences"
             onClick={() => handleLinkClick("experiences")}
@@ -251,6 +739,7 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
           >
             Experiences
           </NavLink>
+
           <NavLink
             to="/offers"
             onClick={() => handleLinkClick("offers")}
@@ -258,6 +747,7 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
           >
             Offers
           </NavLink>
+
           <NavLink
             to="/contactus"
             onClick={() => handleLinkClick("contactus")}
@@ -265,6 +755,7 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
           >
             Contact Us
           </NavLink>
+
           {isLoggedIn && (
             <NavLink
               to="/my-bookings"
@@ -275,54 +766,56 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
             </NavLink>
           )}
 
-          <hr className="border-gray-100" />
-
-          {/* Mobile Extra Icons (Profile/Favorites) */}
-          <div className="flex space-x-4 sm:hidden">
-            <button className="flex items-center text-gray-600 text-sm font-medium">
-              <svg
-                className="w-5 h-5 mr-1"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
-              Favorites
-            </button>
-
-            {isLoggedIn && (
-              <Link
-                to="/profile"
-                className="text-gray-600 hover:text-gray-900 p-1.5 transition-colors hidden sm:block"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7 7z"
-                  />
-                </svg>
-              </Link>
-            )}
-          </div>
           <hr className="border-gray-200" />
 
+          {/* Mobile Profile */}
+          {isLoggedIn && (
+            <Link
+              to="/profile"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="
+                text-gray-600
+                font-medium
+                hover:text-blue-600
+              "
+            >
+              Profile
+            </Link>
+          )}
+
+          {/* Mobile Book Now */}
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              navigate("/hotels");
+            }}
+            className="
+              bg-[#0052CC]
+              hover:bg-blue-700
+              text-white
+              py-2
+              rounded-lg
+              font-semibold
+            "
+          >
+            Book Now
+          </button>
+
+          {/* Mobile Login / Logout */}
           {isLoggedIn ? (
             <button
-              onClick={onLogout}
-              className="bg-red-500 text-white py-2 rounded-lg"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                onLogout();
+              }}
+              className="
+                bg-red-600
+                hover:bg-red-700
+                text-white
+                py-2
+                rounded-lg
+                font-semibold
+              "
             >
               Logout
             </button>
@@ -332,7 +825,14 @@ const Navbar = ({ isLoggedIn, onLoginClick, onLogout }) => {
                 setIsMobileMenuOpen(false);
                 onLoginClick();
               }}
-              className="bg-green-600 text-white py-2 rounded-lg"
+              className="
+                bg-green-600
+                hover:bg-green-700
+                text-white
+                py-2
+                rounded-lg
+                font-semibold
+              "
             >
               Login / Sign Up
             </button>

@@ -1,4 +1,74 @@
 const User = require("../models/User");
+const Booking = require("../models/Booking");
+
+// ============================
+// Get All Users - Admin
+// ============================
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find()
+      .select("-password -resetOtp -resetOtpExpiry")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const usersWithBookings = await Promise.all(
+      users.map(async (user) => {
+        const bookingCount = await Booking.countDocuments({
+          userId: user._id,
+          bookingStatus: { $ne: "cancelled" },
+        });
+
+        return {
+          ...user,
+          bookings: bookingCount,
+        };
+      }),
+    );
+
+    res.status(200).json({
+      success: true,
+      count: usersWithBookings.length,
+      users: usersWithBookings,
+    });
+  } catch (error) {
+    console.log("Get All Users Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+// ============================
+// Delete User - Admin
+// ============================
+const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete user error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
 
 // ============================
 // Get Logged-in User Profile
@@ -95,7 +165,12 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// ============================
+// EXPORTS
+// ============================
 module.exports = {
   getProfile,
   updateProfile,
+  getAllUsers,
+  deleteUser,
 };

@@ -29,3 +29,241 @@
 .animate-shake {
   animation: shake 0.45s ease-in-out;
 }
+
+
+/* vedio  */
+#home {
+    width: 100%;
+    min-height: 100vh;
+    padding-top: 60px;
+}
+ 
+.hero-section {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: inline-block;
+    color: #1f4bff;
+    min-width: 180px;
+    overflow: hidden;
+}
+ 
+.word-box {
+    display: inline-block;
+    height: 120px;
+    overflow: hidden;
+    margin-left: 10px;
+    vertical-align: top;
+}
+ 
+.word-list {
+    display: flex;
+    flex-direction: column;
+    animation: slideWords 8s infinite;
+}
+ 
+.word-list span {
+    display: flex;
+    align-items: center;
+    height: 114px;
+    line-height: 120px;
+        color: #2020b3;
+    font-size: 70px;
+    font-weight: 700;
+
+}
+ 
+@keyframes slideWords {
+ 
+    0%,
+    20% {
+        transform: translateY(0);
+    }
+ 
+    25%,
+    45% {
+        transform: translateY(-120px);
+    }
+ 
+    50%,
+    70% {
+        transform: translateY(-240px);
+    }
+ 
+    75%,
+    95% {
+        transform: translateY(-360px);
+    }
+ 
+    100% {
+        transform: translateY(-480px);
+    }
+}
+ 
+.hero-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+}
+ 
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+}
+ 
+.hero-content {
+    position: relative;
+    z-index: 2;
+    color: white;
+}
+ 
+.hero-h1 {
+    padding-top: 160px;
+    padding-left: 50px;
+    font-size: 50px;
+    /* max-width: 700px; */
+    text-align: center;
+}
+ 
+.hero-solution {
+    color: black;
+}
+ 
+.hero-text {
+    padding-left: 30px;
+    padding-top: 20px;
+    font-size: 25px;
+    line-height: 30px;
+    position: relative;
+    z-index: 1;
+    color: white;
+    text-align: center;
+    padding: 30px;
+}
+
+/* loding animetoin  */
+ 
+ 
+@keyframes loading {
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+.animate-loading {
+  width: 0%;
+  animation: loading 2.5s ease-out forwards;
+}
+
+
+
+/* hero sertion hotel page  */
+
+@keyframes heroZoom {
+  0% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes heroOverlay {
+  0% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+
+  100% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes heroBadge {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes searchBarReveal {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes glowMove {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate(-30px, 20px) scale(1.15);
+  }
+
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes scrollIndicator {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+}

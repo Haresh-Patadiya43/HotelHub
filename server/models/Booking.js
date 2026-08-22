@@ -28,10 +28,10 @@ const bookingSchema = new mongoose.Schema(
       required: true,
     },
 
-    roomName: {
-      type: String,
-      required: true,
-    },
+roomName: {
+  type: String,
+  required: true,
+},
 
     roomImage: {
       type: String,
@@ -90,7 +90,7 @@ const bookingSchema = new mongoose.Schema(
 
     bookingStatus: {
       type: String,
-      enum: ["confirmed", "cancelled"],
+      enum: ["pending", "confirmed", "cancelled"],
       default: "confirmed",
     },
   },

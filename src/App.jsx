@@ -1,24 +1,17 @@
 import { useState } from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Outlet,
-  Navigate,
-} from "react-router-dom";
-
+import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 
-// ===============================
+// =====================================================
 // USER COMPONENTS
-// ===============================
+// =====================================================
 import Navbar from "./componets/Navbar";
 import Footer from "./componets/Footer";
 import ScrollToTop from "./componets/ScrollToTop";
 
-// ===============================
+// =====================================================
 // USER PAGES
-// ===============================
+// =====================================================
 import Home from "./pages/Home";
 import Hotels from "./pages/Hotels";
 import HotelDetails from "./pages/HotelDetails";
@@ -32,34 +25,70 @@ import Booking from "./pages/Booking";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import MyBookings from "./componets/MyBookings";
 
-// ===============================
-// ADMIN COMPONENTS
-// ===============================
+// =====================================================
+// ADMIN PAGES
+// =====================================================
 import AdminLogin from "../admin/pages/AdminLogin";
 import AdminPanel from "../admin/pages/AdminPanel";
 import AdminHotels from "../admin/pages/AdminHotels";
-import AdminProtectedRoute from "../admin/pages/components/AdminProtectedRoute";
+import AdminRooms from "../admin/pages/AdminRooms";
+import AdminBookings from "../admin/pages/AdminBookings";
+import AdminUsers from "../admin/pages/AdminUsers";
 
-// ===============================
+// =====================================================
+// ADMIN COMPONENTS
+// =====================================================
+import AdminProtectedRoute from "../admin/pages/components/AdminProtectedRoute";
+import AdminLayout from "../admin/pages/AdminLayout";
+
+// =====================================================
 // CSS
-// ===============================
+// =====================================================
 import "./App.css";
 
-function App() {
-  // ==========================================
-  // USER LOGIN STATE
-  // ==========================================
+// =====================================================
+// MAIN USER LAYOUT
+// IMPORTANT:
+// Keep this OUTSIDE App().
+// This fixes:
+// "Cannot create components during render"
+// =====================================================
+const MainLayout = ({
+  isLoggedIn,
+  onLoginClick,
+  onLogout,
+}) => {
+  return (
+    <>
+      <Navbar
+        isLoggedIn={isLoggedIn}
+        onLoginClick={onLoginClick}
+        onLogout={onLogout}
+      />
 
+      <Outlet />
+
+      <Footer />
+    </>
+  );
+};
+
+// =====================================================
+// APP
+// =====================================================
+function App() {
+  // ===================================================
+  // USER LOGIN STATE
+  // ===================================================
   const [showLogin, setShowLogin] = useState(false);
 
   const [isLoggedIn, setIsLoggedIn] = useState(
     !!localStorage.getItem("token")
   );
 
-  // ==========================================
+  // ===================================================
   // USER LOGOUT
-  // ==========================================
-
+  // ===================================================
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -69,11 +98,7 @@ function App() {
     toast.custom((t) => (
       <div
         className={`
-          ${
-            t.visible
-              ? "animate-fadeIn"
-              : ""
-          }
+          ${t.visible ? "animate-fadeIn" : ""}
           w-[350px]
           bg-white
           shadow-2xl
@@ -83,23 +108,12 @@ function App() {
           overflow-hidden
         `}
       >
-        {/* Gradient Line */}
+        {/* Top Gradient */}
         <div className="h-1 bg-gradient-to-r from-red-500 via-orange-400 to-yellow-400" />
 
         <div className="p-5 flex items-center gap-4">
-
           {/* Logout Icon */}
-          <div
-            className="
-              w-14
-              h-14
-              rounded-full
-              bg-red-100
-              flex
-              items-center
-              justify-center
-            "
-          >
+          <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
             <svg
               className="w-8 h-8 text-red-600"
               fill="none"
@@ -115,7 +129,7 @@ function App() {
             </svg>
           </div>
 
-          {/* Text */}
+          {/* Message */}
           <div>
             <h3 className="text-lg font-bold text-gray-800">
               Logged Out 👋
@@ -129,42 +143,19 @@ function App() {
               See you again soon!
             </p>
           </div>
-
         </div>
       </div>
     ));
   };
 
-  // ==========================================
-  // MAIN USER LAYOUT
-  // ==========================================
-
-  const MainLayout = () => {
-    return (
-      <>
-        <Navbar
-          isLoggedIn={isLoggedIn}
-          onLoginClick={() => setShowLogin(true)}
-          onLogout={handleLogout}
-        />
-
-        <Outlet />
-
-        <Footer />
-      </>
-    );
-  };
-
-  // ==========================================
+  // ===================================================
   // APP
-  // ==========================================
-
+  // ===================================================
   return (
     <>
-      {/* =====================================
-          TOAST NOTIFICATIONS
-      ===================================== */}
-
+      {/* =================================================
+          TOASTER
+      ================================================= */}
       <Toaster
         position="top-right"
         toastOptions={{
@@ -194,24 +185,28 @@ function App() {
         }}
       />
 
-      {/* =====================================
+      {/* =================================================
           SCROLL TO TOP
-      ===================================== */}
-
+      ================================================= */}
       <ScrollToTop />
 
-      {/* =====================================
-          ROUTES
-      ===================================== */}
-
+      {/* =================================================
+          ALL ROUTES
+      ================================================= */}
       <Routes>
 
-        {/* ===================================
+        {/* =================================================
             USER WEBSITE
-        =================================== */}
-
-        <Route element={<MainLayout />}>
-
+        ================================================= */}
+        <Route
+          element={
+            <MainLayout
+              isLoggedIn={isLoggedIn}
+              onLoginClick={() => setShowLogin(true)}
+              onLogout={handleLogout}
+            />
+          }
+        >
           {/* HOME */}
           <Route
             path="/"
@@ -286,54 +281,70 @@ function App() {
             path="/booking-confirmation"
             element={<BookingConfirmation />}
           />
-
         </Route>
 
-
-        {/* ===================================
+        {/* =================================================
             ADMIN LOGIN
-        =================================== */}
-
+            /admin
+        ================================================= */}
         <Route
           path="/admin"
           element={<AdminLogin />}
         />
 
+        {/* =================================================
+            PROTECTED ADMIN AREA
 
-        {/* ===================================
-            ADMIN DASHBOARD
-            AdminPanel.jsx
-        =================================== */}
-
+            This is a pathless protected layout.
+        ================================================= */}
         <Route
-          path="/admin/dashboard"
           element={
             <AdminProtectedRoute>
-              <AdminPanel />
+              <AdminLayout />
             </AdminProtectedRoute>
           }
-        />
+        >
+          {/* ADMIN DASHBOARD */}
+          <Route
+            path="/admin/dashboard"
+            element={<AdminPanel />}
+          />
 
+          {/* ADMIN HOTELS */}
+          <Route
+            path="/admin/hotels"
+            element={<AdminHotels />}
+          />
 
-        {/* ===================================
-            ADMIN HOTELS
-            AdminHotels.jsx
-        =================================== */}
+          {/* ADD HOTEL */}
+          <Route
+            path="/admin/hotels/add"
+            element={<AdminHotels />}
+          />
 
-        <Route
-          path="/admin/hotels"
-          element={
-            <AdminProtectedRoute>
-              <AdminHotels />
-            </AdminProtectedRoute>
-          }
-        />
+          {/* ADMIN ROOMS */}
+          <Route
+            path="/admin/rooms"
+            element={<AdminRooms />}
+          />
 
+          {/* ADMIN BOOKINGS */}
+          <Route
+            path="/admin/bookings"
+            element={<AdminBookings />}
+          />
 
-        {/* ===================================
-            OPTIONAL ADMIN ROOT REDIRECT
-        =================================== */}
+          {/* ADMIN USERS */}
+          <Route
+            path="/admin/users"
+            element={<AdminUsers />}
+          />
+        </Route>
 
+        {/* =================================================
+            OLD ADMIN PANEL URL
+            /admin/panel → /admin/dashboard
+        ================================================= */}
         <Route
           path="/admin/panel"
           element={
@@ -344,25 +355,9 @@ function App() {
           }
         />
 
-
-        {/* ===================================
-            ADMIN ADD HOTEL
-        =================================== */}
-
-        <Route
-          path="/admin/hotels/add"
-          element={
-            <AdminProtectedRoute>
-              <AdminHotels />
-            </AdminProtectedRoute>
-          }
-        />
-
-
-        {/* ===================================
+        {/* =================================================
             UNKNOWN ROUTE
-        =================================== */}
-
+        ================================================= */}
         <Route
           path="*"
           element={
@@ -372,14 +367,11 @@ function App() {
             />
           }
         />
-
       </Routes>
 
-
-      {/* =====================================
+      {/* =================================================
           USER LOGIN MODAL
-      ===================================== */}
-
+      ================================================= */}
       <LoginModal
         isOpen={showLogin}
         onClose={() => setShowLogin(false)}
@@ -388,7 +380,6 @@ function App() {
           setShowLogin(false);
         }}
       />
-
     </>
   );
 }

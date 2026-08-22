@@ -1,103 +1,127 @@
 const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema({
-  // Authentication
-  name: {
-    type: String,
-    required: true,
-  },
+const userSchema = new mongoose.Schema(
+  {
+    // =========================
+    // Authentication
+    // =========================
 
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
+    name: {
+      type: String,
+      required: true,
+    },
 
-  password: {
-    type: String,
-    required: true,
-  },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
 
-  // Profile
-  username: {
-    type: String,
-    default: "",
-  },
+    password: {
+      type: String,
+      required: true,
+    },
 
-  phone: {
-    type: String,
-    default: "",
-  },
+    // =========================
+    // Profile
+    // =========================
 
-  dob: {
-    type: Date,
-  },
+    username: {
+      type: String,
+      default: "",
+    },
 
-  gender: {
-    type: String,
-    default: "",
-  },
+    phone: {
+      type: String,
+      default: "",
+    },
 
-  country: {
-    type: String,
-    default: "",
-  },
+    dob: {
+      type: Date,
+    },
 
-  state: {
-    type: String,
-    default: "",
-  },
+    gender: {
+      type: String,
+      default: "",
+    },
 
-  city: {
-    type: String,
-    default: "",
-  },
+    country: {
+      type: String,
+      default: "",
+    },
 
-  zipCode: {
-    type: String,
-    default: "",
-  },
+    state: {
+      type: String,
+      default: "",
+    },
 
-  address: {
-    type: String,
-    default: "",
-  },
+    city: {
+      type: String,
+      default: "",
+    },
 
-  website: {
-    type: String,
-    default: "",
-  },
+    zipCode: {
+      type: String,
+      default: "",
+    },
 
-  facebook: {
-    type: String,
-    default: "",
-  },
+    address: {
+      type: String,
+      default: "",
+    },
 
-  instagram: {
-    type: String,
-    default: "",
-  },
+    website: {
+      type: String,
+      default: "",
+    },
 
-  about: {
-    type: String,
-    default: "",
-  },
+    facebook: {
+      type: String,
+      default: "",
+    },
 
-  profileImage: {
-    type: String,
-    default: "",
-  },
+    instagram: {
+      type: String,
+      default: "",
+    },
 
-  // Forgot Password
-  resetOtp: {
-    type: String,
-    default: null,
-  },
+    about: {
+      type: String,
+      default: "",
+    },
 
-  resetOtpExpiry: {
-    type: Date,
-    default: null,
+    profileImage: {
+      type: String,
+      default: "",
+    },
+
+    // =========================
+    // Admin Status
+    // =========================
+
+    status: {
+      type: String,
+      enum: ["Active", "Inactive"],
+      default: "Active",
+    },
+
+    // =========================
+    // Forgot Password
+    // =========================
+
+    resetOtp: {
+      type: String,
+      default: null,
+    },
+
+    resetOtpExpiry: {
+      type: Date,
+      default: null,
+    },
   },
-});
+  {
+    timestamps: true,
+  }
+);
 
 module.exports = mongoose.model("User", userSchema);

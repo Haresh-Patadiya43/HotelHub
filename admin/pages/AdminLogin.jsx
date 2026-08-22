@@ -36,20 +36,20 @@ const AdminLogin = () => {
     <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
       <div className="w-full max-w-md">
 
-        {/* Logo */}
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 mx-auto bg-blue-600 text-white rounded-2xl flex items-center justify-center text-3xl shadow-lg">
-            🏨
-          </div>
+          {/* Logo
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 mx-auto bg-blue-600 text-white rounded-2xl flex items-center justify-center text-3xl shadow-lg">
+              🏨
+            </div>
 
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">
-            Hotel<span className="text-blue-600">Hub</span>
-          </h1>
+            <h1 className="text-3xl font-bold text-gray-900 mt-4">
+              Hotel<span className="text-blue-600">Hub</span>
+            </h1>
 
-          <p className="text-gray-500 mt-1">
-            Admin Administration Panel
-          </p>
-        </div>
+            <p className="text-gray-500 mt-1">
+              Admin Administration Panel
+            </p>
+          </div> */}
 
         {/* Login Card */}
         <div className="bg-white shadow-xl rounded-2xl p-8 border border-gray-100">
@@ -116,20 +116,6 @@ const AdminLogin = () => {
 
           </form>
 
-          {/* Temporary credentials */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl">
-            <p className="text-xs font-semibold text-blue-700 mb-2">
-              Temporary Admin Credentials
-            </p>
-
-            <p className="text-sm text-gray-600">
-              Admin ID: <strong>admin</strong>
-            </p>
-
-            <p className="text-sm text-gray-600">
-              Password: <strong>admin123</strong>
-            </p>
-          </div>
 
         </div>
       </div>

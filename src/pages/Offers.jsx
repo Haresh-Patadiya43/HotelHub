@@ -95,51 +95,7 @@ const Offers = () => {
         </div>
       </section>
 
-      {/* 2. Floating Search Bar */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12">
-        <div className="bg-white p-3 rounded-2xl flex flex-col lg:flex-row items-center shadow-xl shadow-gray-200/50 w-full border border-gray-100 gap-2">
-          
-          <div className="flex-1 w-full p-2 border-b lg:border-b-0 lg:border-r border-gray-100 px-4">
-            <label className="block text-xs font-bold text-gray-800 mb-1">Where to?</label>
-            <div className="flex items-center">
-              <input type="text" placeholder="Search destination" className="w-full text-sm outline-none placeholder-gray-400 font-medium text-gray-900" />
-              <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z"></path></svg>
-            </div>
-          </div>
-
-          <div className="w-full lg:w-48 p-2 border-b lg:border-b-0 lg:border-r border-gray-100 px-4">
-            <label className="block text-xs font-bold text-gray-800 mb-1">Check-in</label>
-            <div className="flex items-center justify-between">
-              <input type="text" placeholder="Select date" className="w-full text-sm outline-none placeholder-gray-400 font-medium text-gray-900" />
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            </div>
-          </div>
-
-          <div className="w-full lg:w-48 p-2 border-b lg:border-b-0 lg:border-r border-gray-100 px-4">
-            <label className="block text-xs font-bold text-gray-800 mb-1">Check-out</label>
-            <div className="flex items-center justify-between">
-              <input type="text" placeholder="Select date" className="w-full text-sm outline-none placeholder-gray-400 font-medium text-gray-900" />
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            </div>
-          </div>
-
-          <div className="w-full lg:w-48 p-2 px-4">
-            <label className="block text-xs font-bold text-gray-800 mb-1">Guests</label>
-            <select className="w-full text-sm outline-none bg-transparent font-medium text-gray-900 appearance-none cursor-pointer">
-              <option>2 Adults</option>
-              <option>1 Adult</option>
-              <option>Family</option>
-            </select>
-          </div>
-
-          <div className="p-2 w-full lg:w-auto">
-            <button className="w-full lg:w-auto bg-[#0052CC] hover:bg-blue-700 text-white text-sm font-semibold px-8 py-3.5 rounded-xl transition-colors shadow-sm">
-              Find Offers
-            </button>
-          </div>
-
-        </div>
-      </div>
+      
 
       {/* 3. Top Offers For You */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 mb-12">

@@ -1,5 +1,5 @@
 import "../index.css";
-import React, { useState } from "react";
+import  { useState } from "react";
 import toast from "react-hot-toast";
 
 const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
