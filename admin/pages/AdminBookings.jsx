@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import jsPDF from "jspdf";
 
 const API_URL = "http://localhost:5000/api";
 
@@ -146,6 +147,347 @@ const AdminBookings = () => {
       currency: "INR",
       maximumFractionDigits: 0,
     }).format(Number(amount) || 0);
+
+  // ==============================
+  // DOWNLOAD BOOKING BILL
+  // ==============================
+
+  const handleDownloadBill = (booking) => {
+    try {
+      const doc = new jsPDF();
+
+      // ==============================
+      // COLORS
+      // ==============================
+
+      const primary = [37, 99, 235];
+      const dark = [31, 41, 55];
+      const gray = [107, 114, 128];
+      const lightGray = [243, 244, 246];
+      const green = [22, 163, 74];
+      const border = [229, 231, 235];
+
+      const pageWidth = 210;
+
+      // ==============================
+      // DATA
+      // ==============================
+
+      const bookingId = getBookingId(booking);
+
+      const customerName = getCustomerName(booking);
+      const customerEmail = getCustomerEmail(booking);
+
+      const phone =
+        booking.phone || booking.userId?.phone || booking.user?.phone || "N/A";
+
+      const hotelName = getHotelName(booking);
+
+      const hotelLocation =
+        booking.hotelLocation ||
+        booking.hotel?.location ||
+        booking.hotel?.address ||
+        "N/A";
+
+      const roomName = getRoomName(booking);
+
+      const guests =
+        booking.guests || booking.numberOfGuests || booking.guestCount || 0;
+
+      const nights = booking.nights || 0;
+
+      const roomPrice =
+        booking.roomPrice ?? booking.roomAmount ?? booking.price ?? 0;
+
+      const taxes = booking.taxes ?? booking.tax ?? 0;
+
+      const totalAmount = getAmount(booking);
+
+      const paymentStatus = booking.paymentStatus || "Paid";
+
+      const bookingStatus = booking.bookingStatus || "Confirmed";
+
+      const invoiceNumber =
+        booking.invoiceNumber ||
+        `INV-${String(booking._id || bookingId)
+          .slice(-8)
+          .toUpperCase()}`;
+
+      const billDate = new Date().toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+
+      // ==============================
+      // HEADER
+      // ==============================
+
+      doc.setFillColor(...primary);
+      doc.rect(0, 0, pageWidth, 48, "F");
+
+      // Logo box
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(18, 12, 25, 25, 4, 4, "F");
+
+      doc.setTextColor(...primary);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("H", 26, 29);
+
+      // HotelHub
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(24);
+      doc.text("HOTELHUB", 50, 25);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text("Your stay, our priority.", 50, 34);
+
+      // Invoice
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("INVOICE", 157, 22);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text("HOTEL BOOKING", 157, 30);
+
+      // ==============================
+      // INVOICE INFORMATION
+      // ==============================
+
+      doc.setTextColor(...dark);
+
+      doc.setFillColor(...lightGray);
+      doc.roundedRect(18, 58, 174, 28, 4, 4, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...gray);
+
+      doc.text("INVOICE NUMBER", 25, 68);
+
+      doc.text("INVOICE DATE", 88, 68);
+
+      doc.text("BOOKING ID", 145, 68);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...dark);
+
+      doc.text(String(invoiceNumber), 25, 78);
+
+      doc.text(billDate, 88, 78);
+
+      doc.text(String(bookingId).slice(-12), 145, 78);
+
+      // ==============================
+      // HOTEL DETAILS
+      // ==============================
+
+      doc.setDrawColor(...border);
+      doc.setFillColor(255, 255, 255);
+
+      doc.roundedRect(18, 96, 84, 52, 4, 4, "FD");
+
+      doc.setTextColor(...primary);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+
+      doc.text("HOTEL DETAILS", 25, 107);
+
+      doc.setTextColor(...dark);
+      doc.setFontSize(10);
+
+      doc.text(String(hotelName).slice(0, 35), 25, 118);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...gray);
+      doc.setFontSize(8.5);
+
+      doc.text(`Location: ${String(hotelLocation).slice(0, 35)}`, 25, 128);
+
+      doc.text(`Room: ${String(roomName).slice(0, 35)}`, 25, 138);
+
+      // ==============================
+      // GUEST DETAILS
+      // ==============================
+
+      doc.setDrawColor(...border);
+      doc.setFillColor(255, 255, 255);
+
+      doc.roundedRect(108, 96, 84, 52, 4, 4, "FD");
+
+      doc.setTextColor(...primary);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+
+      doc.text("GUEST DETAILS", 115, 107);
+
+      doc.setTextColor(...dark);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+
+      doc.text(String(customerName).slice(0, 30), 115, 118);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...gray);
+      doc.setFontSize(8.5);
+
+      doc.text(`Phone: ${String(phone).slice(0, 30)}`, 115, 128);
+
+      doc.text(`Email: ${String(customerEmail).slice(0, 30)}`, 115, 138);
+
+      // ==============================
+      // STAY DETAILS
+      // ==============================
+
+      doc.setTextColor(...dark);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+
+      doc.text("STAY DETAILS", 18, 162);
+
+      // Table header
+      doc.setFillColor(...lightGray);
+
+      doc.roundedRect(18, 168, 174, 12, 2, 2, "F");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...gray);
+
+      doc.text("CHECK-IN", 25, 176);
+
+      doc.text("CHECK-OUT", 72, 176);
+
+      doc.text("NIGHTS", 122, 176);
+
+      doc.text("GUESTS", 155, 176);
+
+      // Table values
+      doc.setTextColor(...dark);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+
+      doc.text(formatDate(booking.checkIn), 25, 188);
+
+      doc.text(formatDate(booking.checkOut), 72, 188);
+
+      doc.text(String(nights), 122, 188);
+
+      doc.text(String(guests), 155, 188);
+
+      // ==============================
+      // BILLING SUMMARY
+      // ==============================
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(...dark);
+
+      doc.text("BILLING SUMMARY", 18, 208);
+
+      doc.setDrawColor(...border);
+      doc.setFillColor(255, 255, 255);
+
+      doc.roundedRect(18, 214, 174, 48, 4, 4, "FD");
+
+      // Room
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(...gray);
+
+      doc.text("Room Charges", 26, 226);
+
+      doc.setTextColor(...dark);
+      doc.setFont("helvetica", "bold");
+
+      doc.text(formatCurrency(roomPrice), 184, 226, { align: "right" });
+
+      // Taxes
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...gray);
+
+      doc.text("Taxes & Fees", 26, 237);
+
+      doc.setTextColor(...dark);
+      doc.setFont("helvetica", "bold");
+
+      doc.text(formatCurrency(taxes), 184, 237, { align: "right" });
+
+      // Divider
+      doc.setDrawColor(...border);
+
+      doc.line(26, 243, 184, 243);
+
+      // Total
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(...dark);
+
+      doc.text("TOTAL AMOUNT", 26, 254);
+
+      doc.setFontSize(15);
+      doc.setTextColor(...primary);
+
+      doc.text(formatCurrency(totalAmount), 184, 254, { align: "right" });
+
+      // ==============================
+      // STATUS BADGES
+      // ==============================
+
+      // Payment
+      doc.setFillColor(220, 252, 231);
+
+      doc.roundedRect(18, 270, 78, 13, 3, 3, "F");
+
+      doc.setTextColor(...green);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+
+      doc.text(`Payment: ${String(paymentStatus).toUpperCase()}`, 27, 279);
+
+      // Booking
+      doc.setFillColor(219, 234, 254);
+
+      doc.roundedRect(102, 270, 90, 13, 3, 3, "F");
+
+      doc.setTextColor(...primary);
+
+      doc.text(`Booking: ${String(bookingStatus).toUpperCase()}`, 111, 279);
+
+      // ==============================
+      // FOOTER
+      // ==============================
+
+      doc.setFillColor(...primary);
+
+      doc.rect(0, 284, pageWidth, 13, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+
+      doc.text("Thank you for choosing HotelHub!", 18, 292);
+
+      doc.text("This is a digitally generated invoice.", 192, 292, {
+        align: "right",
+      });
+
+      // ==============================
+      // DOWNLOAD
+      // ==============================
+
+      doc.save(`HotelHub-Invoice-${bookingId}.pdf`);
+    } catch (error) {
+      console.error("Invoice download error:", error);
+
+      alert("Unable to download the bill. Please try again.");
+    }
+  };
 
   // ==============================
   // HOTEL FILTER
@@ -345,8 +687,6 @@ const AdminBookings = () => {
   return (
     <div className="min-h-screen bg-[#f5f7fb] py-[50px]">
       {/* HEADER */}
-
-   
 
       {/* STATS */}
 
@@ -625,6 +965,16 @@ const AdminBookings = () => {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
                           {/* VIEW */}
+
+                          {/* DOWNLOAD BILL */}
+
+                          <button
+                            onClick={() => handleDownloadBill(booking)}
+                            title="Download bill"
+                            className="w-8 h-8 rounded-lg border border-green-200 text-green-600 flex items-center justify-center hover:bg-green-50 transition"
+                          >
+                            📄
+                          </button>
 
                           <button
                             onClick={() => setSelectedBooking(booking)}

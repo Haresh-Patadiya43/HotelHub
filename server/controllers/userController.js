@@ -22,7 +22,7 @@ const getAllUsers = async (req, res) => {
           ...user,
           bookings: bookingCount,
         };
-      }),
+      })
     );
 
     res.status(200).json({
@@ -31,7 +31,7 @@ const getAllUsers = async (req, res) => {
       users: usersWithBookings,
     });
   } catch (error) {
-    console.log("Get All Users Error:", error);
+    console.error("Get All Users Error:", error);
 
     res.status(500).json({
       success: false,
@@ -61,7 +61,7 @@ const deleteUser = async (req, res) => {
       message: "User deleted successfully",
     });
   } catch (error) {
-    console.error("Delete user error:", error);
+    console.error("Delete User Error:", error);
 
     res.status(500).json({
       success: false,
@@ -75,7 +75,16 @@ const deleteUser = async (req, res) => {
 // ============================
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. User information not found.",
+      });
+    }
+
+    const user = await User.findById(req.user.id)
+      .select("-password -resetOtp -resetOtpExpiry")
+      .lean();
 
     if (!user) {
       return res.status(404).json({
@@ -89,7 +98,7 @@ const getProfile = async (req, res) => {
       user,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Get Profile Error:", error);
 
     res.status(500).json({
       success: false,
@@ -103,6 +112,22 @@ const getProfile = async (req, res) => {
 // ============================
 const updateProfile = async (req, res) => {
   try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. User information not found.",
+      });
+    }
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
     const {
       name,
       username,
@@ -117,50 +142,98 @@ const updateProfile = async (req, res) => {
       website,
       facebook,
       instagram,
+      linkedin,
       about,
       profileImage,
     } = req.body;
 
-    const user = await User.findById(req.user.id);
+    // ============================
+    // Update Profile Fields
+    // ============================
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+    if (name !== undefined) {
+      user.name = name;
     }
 
-    user.name = name || user.name;
-    user.username = username || user.username;
-    user.phone = phone || user.phone;
-    user.dob = dob || user.dob;
-    user.gender = gender || user.gender;
-    user.country = country || user.country;
-    user.state = state || user.state;
-    user.city = city || user.city;
-    user.zipCode = zipCode || user.zipCode;
-    user.address = address || user.address;
-    user.website = website || user.website;
-    user.facebook = facebook || user.facebook;
-    user.instagram = instagram || user.instagram;
-    user.about = about || user.about;
-    user.profileImage = profileImage || user.profileImage;
+    if (username !== undefined) {
+      user.username = username;
+    }
+
+    if (phone !== undefined) {
+      user.phone = phone;
+    }
+
+    if (dob !== undefined) {
+      user.dob = dob ? new Date(dob) : null;
+    }
+
+    if (gender !== undefined) {
+      user.gender = gender;
+    }
+
+    if (country !== undefined) {
+      user.country = country;
+    }
+
+    if (state !== undefined) {
+      user.state = state;
+    }
+
+    if (city !== undefined) {
+      user.city = city;
+    }
+
+    if (zipCode !== undefined) {
+      user.zipCode = zipCode;
+    }
+
+    if (address !== undefined) {
+      user.address = address;
+    }
+
+    if (website !== undefined) {
+      user.website = website;
+    }
+
+    if (facebook !== undefined) {
+      user.facebook = facebook;
+    }
+
+    if (instagram !== undefined) {
+      user.instagram = instagram;
+    }
+
+    if (linkedin !== undefined) {
+      user.linkedin = linkedin;
+    }
+
+    if (about !== undefined) {
+      user.about = about;
+    }
+
+    // Important:
+    // Allows profile image to be removed by sending ""
+    if (profileImage !== undefined) {
+      user.profileImage = profileImage;
+    }
 
     await user.save();
 
-    user.password = undefined;
+    const updatedUser = await User.findById(user._id)
+      .select("-password -resetOtp -resetOtpExpiry")
+      .lean();
 
     res.status(200).json({
       success: true,
       message: "Profile updated successfully",
-      user,
+      user: updatedUser,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Update Profile Error:", error);
 
     res.status(500).json({
       success: false,
-      message: "Server Error",
+      message: error.message || "Server Error",
     });
   }
 };

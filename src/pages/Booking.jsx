@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -85,7 +85,7 @@ const Booking = () => {
     const difference = endDate.getTime() - startDate.getTime();
 
     nights = Math.ceil(
-      difference / (1000 * 60 * 60 * 24),
+      difference / (1000 * 60 * 60 * 24)
     );
 
     if (nights < 1) {
@@ -94,7 +94,7 @@ const Booking = () => {
   }
 
   // =========================
-  // PRICE CALCULATION
+  // PRICE
   // =========================
 
   const roomPrice = Number(room.price) || 0;
@@ -106,13 +106,15 @@ const Booking = () => {
   const totalPrice = roomTotal + taxes;
 
   // =========================
-  // TODAY DATE
+  // TODAY
   // =========================
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date()
+    .toISOString()
+    .split("T")[0];
 
   // =========================
-  // CONTINUE BOOKING
+  // CONTINUE TO PAYMENT
   // =========================
 
   const handleContinue = async () => {
@@ -146,13 +148,11 @@ const Booking = () => {
       return;
     }
 
-    // ============================
-    // CHECK LOGIN TOKEN
-    // ============================
+    // =========================
+    // CHECK LOGIN
+    // =========================
 
     const token = localStorage.getItem("token");
-
-    console.log("Booking Token:", token);
 
     if (!token) {
       alert("Please login before making a booking.");
@@ -162,9 +162,9 @@ const Booking = () => {
     try {
       setBookingLoading(true);
 
-      // ============================
+      // =========================
       // BOOKING DATA
-      // ============================
+      // =========================
 
       const bookingData = {
         hotelId: hotel._id,
@@ -174,7 +174,7 @@ const Booking = () => {
 
         roomName: room.roomType,
         roomImage: room.image,
-        roomPrice: roomPrice,
+        roomPrice,
 
         checkIn,
         checkOut,
@@ -188,50 +188,36 @@ const Booking = () => {
 
         taxes,
         totalPrice,
+
+        // IMPORTANT
+        // Booking is NOT confirmed yet
+        paymentStatus: "pending",
+        bookingStatus: "pending",
       };
 
-      console.log("Sending booking:", bookingData);
-
-      // ============================
-      // SEND BOOKING TO BACKEND
-      // ============================
-
-      const response = await fetch(
-        "http://localhost:5000/api/bookings",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-
-          body: JSON.stringify(bookingData),
-        },
+      console.log(
+        "Booking data prepared:",
+        bookingData
       );
 
-      const data = await response.json();
+      // =========================
+      // GO TO PAYMENT
+      // =========================
 
-      console.log("Booking response:", data);
-
-      // ============================
-      // SUCCESS
-      // ============================
-
-      if (data.success) {
-        navigate("/booking-confirmation", {
-          state: {
-            booking: data.booking,
-          },
-        });
-      } else {
-        alert(data.message || "Booking failed.");
-      }
+      navigate("/payment", {
+        state: {
+          bookingData,
+          amount: totalPrice,
+        },
+      });
     } catch (error) {
-      console.error("Booking Error:", error);
+      console.error(
+        "Payment Navigation Error:",
+        error
+      );
 
       alert(
-        "Unable to create booking. Please make sure the server is running.",
+        "Unable to continue to payment."
       );
     } finally {
       setBookingLoading(false);
@@ -239,13 +225,14 @@ const Booking = () => {
   };
 
   // =========================
-  // ANIMATION VARIANTS
+  // ANIMATION
   // =========================
 
   const containerVariants = {
     hidden: {
       opacity: 0,
     },
+
     visible: {
       opacity: 1,
       transition: {
@@ -260,6 +247,7 @@ const Booking = () => {
       opacity: 0,
       y: 30,
     },
+
     visible: {
       opacity: 1,
       y: 0,
@@ -292,9 +280,7 @@ const Booking = () => {
         animate="visible"
         className="max-w-6xl mx-auto px-4"
       >
-        {/* =========================
-            HEADER
-        ========================= */}
+        {/* HEADER */}
 
         <motion.div
           variants={itemVariants}
@@ -324,22 +310,18 @@ const Booking = () => {
           </motion.p>
         </motion.div>
 
-        {/* =========================
-            MAIN GRID
-        ========================= */}
+        {/* MAIN GRID */}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* ==================================
-              LEFT SIDE
-          ================================== */}
+
+          {/* LEFT */}
 
           <motion.div
             variants={containerVariants}
             className="lg:col-span-2 space-y-6"
           >
-            {/* =========================
-                HOTEL
-            ========================= */}
+
+            {/* HOTEL */}
 
             <motion.div
               variants={itemVariants}
@@ -351,9 +333,9 @@ const Booking = () => {
               </h2>
 
               <div className="flex flex-col sm:flex-row gap-5">
+
                 <motion.img
                   whileHover={{ scale: 1.04 }}
-                  transition={{ duration: 0.3 }}
                   src={hotel.image}
                   alt={hotel.name}
                   className="w-full sm:w-40 h-28 object-cover rounded-xl"
@@ -368,28 +350,17 @@ const Booking = () => {
                     📍 {hotel.location}
                   </p>
 
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{
-                      opacity: 1,
-                      scale: 1,
-                    }}
-                    transition={{
-                      delay: 0.4,
-                    }}
-                    className="mt-3"
-                  >
+                  <div className="mt-3">
                     <span className="bg-green-600 text-white px-3 py-1 rounded-md text-sm">
                       4.8 ⭐
                     </span>
-                  </motion.div>
+                  </div>
                 </div>
+
               </div>
             </motion.div>
 
-            {/* =========================
-                ROOM
-            ========================= */}
+            {/* ROOM */}
 
             <motion.div
               variants={itemVariants}
@@ -401,15 +372,16 @@ const Booking = () => {
               </h2>
 
               <div className="flex flex-col md:flex-row gap-6">
+
                 <motion.img
                   whileHover={{ scale: 1.04 }}
-                  transition={{ duration: 0.3 }}
                   src={room.image}
                   alt={room.roomType}
                   className="w-full md:w-64 h-48 object-cover rounded-xl"
                 />
 
                 <div className="flex-1">
+
                   <h3 className="text-2xl font-bold">
                     {room.roomType}
                   </h3>
@@ -429,6 +401,7 @@ const Booking = () => {
                   </p>
 
                   <div className="flex flex-wrap gap-2 mt-4">
+
                     {room.amenities?.map(
                       (amenity, index) => (
                         <motion.span
@@ -441,27 +414,21 @@ const Booking = () => {
                             opacity: 1,
                             scale: 1,
                           }}
-                          transition={{
-                            delay:
-                              0.1 * index,
-                          }}
-                          whileHover={{
-                            scale: 1.05,
-                          }}
                           className="bg-gray-100 px-3 py-1 rounded-full text-sm"
                         >
                           ✓ {amenity}
                         </motion.span>
-                      ),
+                      )
                     )}
+
                   </div>
+
                 </div>
+
               </div>
             </motion.div>
 
-            {/* =========================
-                STAY DETAILS
-            ========================= */}
+            {/* STAY */}
 
             <motion.div
               variants={itemVariants}
@@ -473,17 +440,13 @@ const Booking = () => {
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* CHECK IN */}
 
-                <motion.div variants={itemVariants}>
+                <div>
                   <label className="block font-semibold mb-2">
                     Check-in
                   </label>
 
-                  <motion.input
-                    whileFocus={{
-                      scale: 1.01,
-                    }}
+                  <input
                     type="date"
                     min={today}
                     value={checkIn}
@@ -497,33 +460,27 @@ const Booking = () => {
                         setCheckOut("");
                       }
                     }}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                </motion.div>
+                </div>
 
-                {/* CHECK OUT */}
-
-                <motion.div variants={itemVariants}>
+                <div>
                   <label className="block font-semibold mb-2">
                     Check-out
                   </label>
 
-                  <motion.input
-                    whileFocus={{
-                      scale: 1.01,
-                    }}
+                  <input
                     type="date"
                     min={checkIn || today}
                     value={checkOut}
                     onChange={(e) =>
                       setCheckOut(e.target.value)
                     }
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                </motion.div>
-              </div>
+                </div>
 
-              {/* NIGHTS */}
+              </div>
 
               <AnimatePresence>
                 {checkIn &&
@@ -533,20 +490,10 @@ const Booking = () => {
                       initial={{
                         opacity: 0,
                         height: 0,
-                        y: -10,
                       }}
                       animate={{
                         opacity: 1,
                         height: "auto",
-                        y: 0,
-                      }}
-                      exit={{
-                        opacity: 0,
-                        height: 0,
-                        y: -10,
-                      }}
-                      transition={{
-                        duration: 0.3,
                       }}
                       className="mt-5 bg-blue-50 border border-blue-100 rounded-lg p-4 overflow-hidden"
                     >
@@ -564,31 +511,26 @@ const Booking = () => {
                   )}
               </AnimatePresence>
 
-              {/* GUESTS */}
+              <div className="mt-5">
 
-              <motion.div
-                variants={itemVariants}
-                className="mt-5"
-              >
                 <label className="block font-semibold mb-2">
                   Number of Guests
                 </label>
 
-                <motion.select
-                  whileFocus={{
-                    scale: 1.01,
-                  }}
+                <select
                   value={guests}
                   onChange={(e) =>
-                    setGuests(Number(e.target.value))
+                    setGuests(
+                      Number(e.target.value)
+                    )
                   }
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {Array.from(
                     {
                       length: room.guests,
                     },
-                    (_, index) => index + 1,
+                    (_, index) => index + 1
                   ).map((guest) => (
                     <option
                       key={guest}
@@ -600,13 +542,13 @@ const Booking = () => {
                         : "Guests"}
                     </option>
                   ))}
-                </motion.select>
-              </motion.div>
+                </select>
+
+              </div>
+
             </motion.div>
 
-            {/* =========================
-                GUEST DETAILS
-            ========================= */}
+            {/* GUEST DETAILS */}
 
             <motion.div
               variants={itemVariants}
@@ -617,77 +559,64 @@ const Booking = () => {
                 Guest Details
               </h2>
 
-              {/* NAME */}
+              <div className="mb-5">
 
-              <motion.div
-                variants={itemVariants}
-                className="mb-5"
-              >
                 <label className="block font-semibold mb-2">
                   Full Name
                 </label>
 
-                <motion.input
-                  whileFocus={{
-                    scale: 1.01,
-                  }}
+                <input
                   type="text"
                   value={guestName}
                   onChange={(e) =>
                     setGuestName(e.target.value)
                   }
                   placeholder="Enter your full name"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
                 />
-              </motion.div>
 
-              {/* PHONE + EMAIL */}
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <motion.div variants={itemVariants}>
+
+                <div>
                   <label className="block font-semibold mb-2">
                     Phone Number
                   </label>
 
-                  <motion.input
-                    whileFocus={{
-                      scale: 1.01,
-                    }}
+                  <input
                     type="tel"
                     value={phone}
                     onChange={(e) =>
                       setPhone(e.target.value)
                     }
                     placeholder="Enter phone number"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                </motion.div>
+                </div>
 
-                <motion.div variants={itemVariants}>
+                <div>
                   <label className="block font-semibold mb-2">
                     Email Address
                   </label>
 
-                  <motion.input
-                    whileFocus={{
-                      scale: 1.01,
-                    }}
+                  <input
                     type="email"
                     value={email}
                     onChange={(e) =>
                       setEmail(e.target.value)
                     }
                     placeholder="Enter email address"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                </motion.div>
+                </div>
+
               </div>
             </motion.div>
+
           </motion.div>
 
-          {/* ==================================
-              RIGHT SIDE
-          ================================== */}
+          {/* RIGHT */}
 
           <motion.div
             initial={{
@@ -698,35 +627,17 @@ const Booking = () => {
               opacity: 1,
               x: 0,
             }}
-            transition={{
-              duration: 0.6,
-              delay: 0.3,
-              ease: "easeOut",
-            }}
           >
             <motion.div
-              whileHover={{
-                y: -4,
-                boxShadow:
-                  "0 20px 40px rgba(0, 0, 0, 0.08)",
-              }}
-              transition={{
-                duration: 0.25,
-              }}
               className="bg-white rounded-2xl shadow-sm p-6 lg:sticky lg:top-6"
             >
+
               <h2 className="text-2xl font-bold mb-6">
                 Price Summary
               </h2>
 
-              {/* ROOM PRICE */}
+              <div className="flex justify-between mb-4">
 
-              <motion.div
-                initial={{ opacity: 0, x: 15 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
-                className="flex justify-between mb-4"
-              >
                 <span className="text-gray-600">
                   ₹{roomPrice} × {nights}{" "}
                   {nights === 1
@@ -734,134 +645,64 @@ const Booking = () => {
                     : "nights"}
                 </span>
 
-                <motion.span
-                  key={roomTotal}
-                  initial={{
-                    opacity: 0,
-                    scale: 0.8,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    scale: 1,
-                  }}
-                  className="font-semibold"
-                >
+                <span className="font-semibold">
                   ₹{roomTotal}
-                </motion.span>
-              </motion.div>
+                </span>
 
-              {/* TAX */}
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, x: 15 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
-                className="flex justify-between mb-4"
-              >
+              <div className="flex justify-between mb-4">
+
                 <span className="text-gray-600">
                   Taxes & fees
                 </span>
 
-                <motion.span
-                  key={taxes}
-                  initial={{
-                    opacity: 0,
-                    scale: 0.8,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    scale: 1,
-                  }}
-                  className="font-semibold"
-                >
+                <span className="font-semibold">
                   ₹{taxes}
-                </motion.span>
-              </motion.div>
+                </span>
 
-              {/* DIVIDER */}
+              </div>
 
               <div className="border-t pt-4 mt-4">
+
                 <div className="flex justify-between">
+
                   <span className="text-xl font-bold">
                     Total
                   </span>
 
-                  <motion.span
-                    key={totalPrice}
-                    initial={{
-                      opacity: 0,
-                      scale: 0.7,
-                      y: 10,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      scale: 1,
-                      y: 0,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 300,
-                    }}
-                    className="text-2xl font-bold text-green-600"
-                  >
+                  <span className="text-2xl font-bold text-green-600">
                     ₹{totalPrice}
-                  </motion.span>
+                  </span>
+
                 </div>
+
               </div>
 
-              {/* BOOKING BUTTON */}
-
               <motion.button
-                whileHover={
-                  !bookingLoading
-                    ? {
-                        scale: 1.02,
-                        y: -2,
-                      }
-                    : {}
-                }
-                whileTap={
-                  !bookingLoading
-                    ? {
-                        scale: 0.97,
-                      }
-                    : {}
-                }
+                whileHover={{
+                  scale: 1.02,
+                  y: -2,
+                }}
+                whileTap={{
+                  scale: 0.97,
+                }}
                 onClick={handleContinue}
                 disabled={bookingLoading}
-                className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl mt-6 hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl mt-6 hover:bg-blue-700 transition disabled:bg-gray-400"
               >
-                {bookingLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <motion.span
-                      animate={{
-                        rotate: 360,
-                      }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                    />
-
-                    Confirming Booking...
-                  </span>
-                ) : (
-                  "Continue Booking"
-                )}
+                {bookingLoading
+                  ? "Processing..."
+                  : "Continue to Payment →"}
               </motion.button>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.7 }}
-                className="text-xs text-gray-400 text-center mt-4"
-              >
-                You won't be charged yet.
-              </motion.p>
+              <p className="text-xs text-gray-400 text-center mt-4">
+                Your booking will be created after payment confirmation.
+              </p>
+
             </motion.div>
           </motion.div>
+
         </div>
       </motion.div>
     </motion.div>

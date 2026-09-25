@@ -7,6 +7,7 @@ const bookingSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
     hotelId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hotel",
@@ -28,10 +29,10 @@ const bookingSchema = new mongoose.Schema(
       required: true,
     },
 
-roomName: {
-  type: String,
-  required: true,
-},
+    roomName: {
+      type: String,
+      required: true,
+    },
 
     roomImage: {
       type: String,
@@ -78,9 +79,11 @@ roomName: {
       required: true,
     },
 
+    // Billing
     taxes: {
       type: Number,
       required: true,
+      default: 0,
     },
 
     totalPrice: {
@@ -88,15 +91,45 @@ roomName: {
       required: true,
     },
 
+    // Booking status
     bookingStatus: {
       type: String,
-      enum: ["pending", "confirmed", "cancelled"],
+      enum: ["pending", "confirmed", "completed", "cancelled"],
       default: "confirmed",
+    },
+
+    // Payment
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "failed", "refunded"],
+      default: "pending",
+    },
+
+    paymentMethod: {
+      type: String,
+      enum: ["cash", "online"],
+      default: "online",
+    },
+
+    // Invoice
+    invoiceNumber: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
+    invoiceGenerated: {
+      type: Boolean,
+      default: false,
+    },
+
+    invoiceGeneratedAt: {
+      type: Date,
     },
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 module.exports = mongoose.model("Booking", bookingSchema);

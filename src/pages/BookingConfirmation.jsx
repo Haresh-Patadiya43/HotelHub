@@ -1,12 +1,460 @@
-import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
+import jsPDF from "jspdf";
 
 const BookingConfirmation = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const { booking } = location.state || {};
+
+  // =========================================
+  // NO BOOKING DATA
+  // =========================================
+
+  if (!booking) {
+    return (
+      <motion.div
+        className="min-h-screen flex items-center justify-center bg-gray-50 px-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.div
+          className="text-center"
+          initial={{
+            opacity: 0,
+            y: 30,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            duration: 0.6,
+            ease: "easeOut",
+          }}
+        >
+          <motion.div
+            className="text-6xl mb-4"
+            animate={{
+              y: [0, -10, 0],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            🏨
+          </motion.div>
+
+          <h1 className="text-3xl font-bold text-gray-800">
+            Booking Not Found
+          </h1>
+
+          <p className="text-gray-500 mt-2">
+            We couldn't find your booking information.
+          </p>
+
+          <motion.button
+            onClick={() => navigate("/")}
+            className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+            whileHover={{
+              scale: 1.05,
+              y: -2,
+            }}
+            whileTap={{
+              scale: 0.95,
+            }}
+          >
+            Go Home
+          </motion.button>
+        </motion.div>
+      </motion.div>
+    );
+  }
+
+  // =========================================
+  // FORMAT DATES
+  // =========================================
+
+  const checkIn = booking.checkIn
+    ? new Date(booking.checkIn).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "N/A";
+
+  const checkOut = booking.checkOut
+    ? new Date(booking.checkOut).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "N/A";
+
+  // =========================================
+  // DOWNLOAD BILL
+  // =========================================
+
+  const handleDownloadBill = () => {
+  try {
+    const doc = new jsPDF();
+
+    // =========================================
+    // COLORS
+    // =========================================
+
+    const primary = [37, 99, 235];       // Blue
+    const dark = [31, 41, 55];           // Dark gray
+    const gray = [107, 114, 128];        // Gray
+    const lightGray = [243, 244, 246];   // Background
+    const green = [22, 163, 74];         // Green
+    const border = [229, 231, 235];      // Border
+
+    // =========================================
+    // PAGE
+    // =========================================
+
+   const pageWidth = 210;
+
+    // =========================================
+    // HEADER
+    // =========================================
+
+    doc.setFillColor(...primary);
+    doc.rect(0, 0, pageWidth, 48, "F");
+
+    // HotelHub Logo Box
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(18, 12, 25, 25, 4, 4, "F");
+
+    doc.setTextColor(...primary);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("H", 26, 29);
+
+    // HOTELHUB
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(24);
+    doc.text("HOTELHUB", 50, 25);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text("Your stay, our priority.", 50, 34);
+
+    // INVOICE label
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("INVOICE", 157, 22);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text("HOTEL BOOKING", 157, 30);
+
+    // =========================================
+    // INVOICE INFORMATION
+    // =========================================
+
+    doc.setTextColor(...dark);
+
+    doc.setFillColor(...lightGray);
+    doc.roundedRect(18, 58, 174, 28, 4, 4, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...gray);
+
+    doc.text("INVOICE NUMBER", 25, 68);
+    doc.text("INVOICE DATE", 88, 68);
+    doc.text("BOOKING ID", 145, 68);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...dark);
+
+    const invoiceNumber =
+      booking.invoiceNumber ||
+      `INV-${booking._id?.slice(-8).toUpperCase() || Date.now()}`;
+
+    const billDate = new Date().toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+    doc.text(invoiceNumber, 25, 78);
+    doc.text(billDate, 88, 78);
+
+    const shortBookingId =
+      booking._id?.slice(-8).toUpperCase() || "N/A";
+
+    doc.text(shortBookingId, 145, 78);
+
+    // =========================================
+    // HOTEL + GUEST SECTION
+    // =========================================
+
+    // HOTEL CARD
+    doc.setDrawColor(...border);
+    doc.setFillColor(255, 255, 255);
+
+    doc.roundedRect(18, 96, 84, 48, 4, 4, "FD");
+
+    doc.setTextColor(...primary);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("HOTEL DETAILS", 25, 107);
+
+    doc.setTextColor(...dark);
+    doc.setFontSize(10);
+
+    doc.setFont("helvetica", "bold");
+    doc.text(booking.hotelName || "Hotel", 25, 118);
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...gray);
+    doc.setFontSize(9);
+
+    doc.text(
+      `Location: ${booking.hotelLocation || "N/A"}`,
+      25,
+      127
+    );
+
+    doc.text(
+      `Room: ${booking.roomName || "N/A"}`,
+      25,
+      136
+    );
+
+    // GUEST CARD
+    doc.setDrawColor(...border);
+    doc.setFillColor(255, 255, 255);
+
+    doc.roundedRect(108, 96, 84, 48, 4, 4, "FD");
+
+    doc.setTextColor(...primary);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("GUEST DETAILS", 115, 107);
+
+    doc.setTextColor(...dark);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+
+    doc.text(
+      booking.guestName || "Guest",
+      115,
+      118
+    );
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...gray);
+    doc.setFontSize(8.5);
+
+    doc.text(
+      `Phone: ${booking.phone || "N/A"}`,
+      115,
+      127
+    );
+
+    doc.text(
+      `Email: ${booking.email || "N/A"}`,
+      115,
+      136
+    );
+
+    // =========================================
+    // STAY DETAILS
+    // =========================================
+
+    doc.setTextColor(...dark);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+
+    doc.text("STAY DETAILS", 18, 158);
+
+    // Table Header
+    doc.setFillColor(...lightGray);
+    doc.roundedRect(18, 164, 174, 12, 2, 2, "F");
+
+    doc.setFontSize(8);
+    doc.setTextColor(...gray);
+
+    doc.text("CHECK-IN", 25, 172);
+    doc.text("CHECK-OUT", 72, 172);
+    doc.text("NIGHTS", 122, 172);
+    doc.text("GUESTS", 155, 172);
+
+    // Table Data
+    doc.setTextColor(...dark);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+
+    doc.text(checkIn, 25, 184);
+    doc.text(checkOut, 72, 184);
+
+    doc.text(
+      `${booking.nights || 0}`,
+      122,
+      184
+    );
+
+    doc.text(
+      `${booking.guests || 0}`,
+      155,
+      184
+    );
+
+    // =========================================
+    // BILLING SUMMARY
+    // =========================================
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(...dark);
+
+    doc.text("BILLING SUMMARY", 18, 204);
+
+    // Billing container
+    doc.setDrawColor(...border);
+    doc.setFillColor(255, 255, 255);
+
+    doc.roundedRect(18, 210, 174, 45, 4, 4, "FD");
+
+    // Room
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...gray);
+
+    doc.text("Room Charges", 26, 222);
+
+    doc.setTextColor(...dark);
+    doc.setFont("helvetica", "bold");
+
+    doc.text(
+      `Rs. ${Number(booking.roomPrice || 0).toLocaleString("en-IN")}`,
+      158,
+      222,
+      { align: "right" }
+    );
+
+    // Taxes
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...gray);
+
+    doc.text("Taxes & Fees", 26, 233);
+
+    doc.setTextColor(...dark);
+    doc.setFont("helvetica", "bold");
+
+    doc.text(
+      `Rs. ${Number(booking.taxes || 0).toLocaleString("en-IN")}`,
+      158,
+      233,
+      { align: "right" }
+    );
+
+    // Divider
+    doc.setDrawColor(...border);
+    doc.line(26, 239, 184, 239);
+
+    // TOTAL
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...dark);
+
+    doc.text("TOTAL AMOUNT", 26, 249);
+
+    doc.setFontSize(15);
+    doc.setTextColor(...primary);
+
+    doc.text(
+      `Rs. ${Number(booking.totalPrice || 0).toLocaleString("en-IN")}`,
+      158,
+      249,
+      { align: "right" }
+    );
+
+    // =========================================
+    // STATUS
+    // =========================================
+
+    const paymentStatus =
+      booking.paymentStatus || "Paid";
+
+    const bookingStatus =
+      booking.bookingStatus || "Confirmed";
+
+    // Payment badge
+    doc.setFillColor(220, 252, 231);
+    doc.roundedRect(18, 264, 78, 13, 3, 3, "F");
+
+    doc.setTextColor(...green);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+
+    doc.text(
+      `Payment: ${paymentStatus.toUpperCase()}`,
+      27,
+      273
+    );
+
+    // Booking badge
+    doc.setFillColor(219, 234, 254);
+    doc.roundedRect(102, 264, 90, 13, 3, 3, "F");
+
+    doc.setTextColor(...primary);
+
+    doc.text(
+      `Booking: ${bookingStatus.toUpperCase()}`,
+      111,
+      273
+    );
+
+    // =========================================
+    // FOOTER
+    // =========================================
+
+    doc.setFillColor(...primary);
+    doc.rect(0, 284, pageWidth, 13, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+
+    doc.text(
+      "Thank you for choosing HotelHub!",
+      18,
+      292
+    );
+
+    doc.text(
+      "This is a digitally generated invoice.",
+      192,
+      292,
+      { align: "right" }
+    );
+
+    // =========================================
+    // DOWNLOAD
+    // =========================================
+
+    doc.save(
+      `HotelHub-Invoice-${booking._id || Date.now()}.pdf`
+    );
+  } catch (error) {
+    console.error("Invoice download error:", error);
+
+    alert(
+      "Unable to download the bill. Please try again."
+    );
+  }
+};
 
   // =========================================
   // ANIMATION VARIANTS
@@ -74,97 +522,6 @@ const BookingConfirmation = () => {
   };
 
   // =========================================
-  // NO BOOKING DATA
-  // =========================================
-
-  if (!booking) {
-    return (
-      <motion.div
-        className="min-h-screen flex items-center justify-center bg-gray-50 px-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <motion.div
-          className="text-center"
-          initial={{
-            opacity: 0,
-            y: 30,
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
-          transition={{
-            duration: 0.6,
-            ease: "easeOut",
-          }}
-        >
-          {/* HOTEL ICON */}
-
-          <motion.div
-            className="text-6xl mb-4"
-            animate={{
-              y: [0, -10, 0],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          >
-            🏨
-          </motion.div>
-
-          <h1 className="text-3xl font-bold text-gray-800">
-            Booking Not Found
-          </h1>
-
-          <p className="text-gray-500 mt-2">
-            We couldn't find your booking information.
-          </p>
-
-          <motion.button
-            onClick={() => navigate("/")}
-            className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
-            whileHover={{
-              scale: 1.05,
-              y: -2,
-            }}
-            whileTap={{
-              scale: 0.95,
-            }}
-          >
-            Go Home
-          </motion.button>
-        </motion.div>
-      </motion.div>
-    );
-  }
-
-  // =========================================
-  // FORMAT DATES
-  // =========================================
-
-  const checkIn = new Date(booking.checkIn).toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }
-  );
-
-  const checkOut = new Date(booking.checkOut).toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }
-  );
-
-  // =========================================
   // RETURN
   // =========================================
 
@@ -189,8 +546,6 @@ const BookingConfirmation = () => {
           variants={cardVariants}
           className="relative overflow-hidden bg-white rounded-2xl shadow-sm p-8 text-center"
         >
-          {/* DECORATIVE CIRCLE */}
-
           <motion.div
             className="absolute -top-20 -right-20 w-44 h-44 bg-green-100 rounded-full opacity-50"
             animate={{
@@ -221,8 +576,6 @@ const BookingConfirmation = () => {
             variants={successIconVariants}
             className="relative w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto"
           >
-            {/* PULSE */}
-
             <motion.div
               className="absolute inset-0 rounded-full border-4 border-green-200"
               animate={{
@@ -235,8 +588,6 @@ const BookingConfirmation = () => {
                 ease: "easeOut",
               }}
             />
-
-            {/* CHECK */}
 
             <motion.svg
               width="42"
@@ -354,8 +705,6 @@ const BookingConfirmation = () => {
           </h2>
 
           <div className="flex flex-col md:flex-row gap-5">
-            {/* HOTEL IMAGE */}
-
             <motion.div
               className="w-full md:w-52 h-36 overflow-hidden rounded-xl"
               whileHover={{
@@ -374,8 +723,6 @@ const BookingConfirmation = () => {
                 }}
               />
             </motion.div>
-
-            {/* HOTEL INFO */}
 
             <div>
               <motion.h3
@@ -435,16 +782,11 @@ const BookingConfirmation = () => {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* CHECK IN */}
-
             <motion.div
               className="bg-gray-50 rounded-xl p-4"
               whileHover={{
                 y: -4,
                 scale: 1.02,
-              }}
-              transition={{
-                duration: 0.2,
               }}
             >
               <p className="text-sm text-gray-500">
@@ -456,16 +798,11 @@ const BookingConfirmation = () => {
               </p>
             </motion.div>
 
-            {/* CHECK OUT */}
-
             <motion.div
               className="bg-gray-50 rounded-xl p-4"
               whileHover={{
                 y: -4,
                 scale: 1.02,
-              }}
-              transition={{
-                duration: 0.2,
               }}
             >
               <p className="text-sm text-gray-500">
@@ -477,16 +814,11 @@ const BookingConfirmation = () => {
               </p>
             </motion.div>
 
-            {/* GUESTS */}
-
             <motion.div
               className="bg-gray-50 rounded-xl p-4"
               whileHover={{
                 y: -4,
                 scale: 1.02,
-              }}
-              transition={{
-                duration: 0.2,
               }}
             >
               <p className="text-sm text-gray-500">
@@ -540,33 +872,21 @@ const BookingConfirmation = () => {
           </h2>
 
           <div className="space-y-3">
-            <motion.p
-              whileHover={{
-                x: 5,
-              }}
-            >
+            <motion.p whileHover={{ x: 5 }}>
               <span className="font-semibold">
                 Name:
               </span>{" "}
               {booking.guestName}
             </motion.p>
 
-            <motion.p
-              whileHover={{
-                x: 5,
-              }}
-            >
+            <motion.p whileHover={{ x: 5 }}>
               <span className="font-semibold">
                 Phone:
               </span>{" "}
               {booking.phone}
             </motion.p>
 
-            <motion.p
-              whileHover={{
-                x: 5,
-              }}
-            >
+            <motion.p whileHover={{ x: 5 }}>
               <span className="font-semibold">
                 Email:
               </span>{" "}
@@ -586,8 +906,6 @@ const BookingConfirmation = () => {
           <h2 className="text-2xl font-bold mb-5">
             Payment Summary
           </h2>
-
-          {/* ROOM */}
 
           <motion.div
             className="flex justify-between mb-3"
@@ -612,8 +930,6 @@ const BookingConfirmation = () => {
             </span>
           </motion.div>
 
-          {/* TAX */}
-
           <motion.div
             className="flex justify-between mb-3"
             initial={{
@@ -636,8 +952,6 @@ const BookingConfirmation = () => {
               ₹{booking.taxes}
             </span>
           </motion.div>
-
-          {/* TOTAL */}
 
           <div className="border-t pt-4 mt-4 flex justify-between items-center">
             <span className="text-xl font-bold">
@@ -730,11 +1044,11 @@ const BookingConfirmation = () => {
             Back to Home
           </motion.button>
 
-          {/* PRINT */}
+          {/* DOWNLOAD BILL */}
 
           <motion.button
-            onClick={() => window.print()}
-            className="flex-1 border border-gray-300 bg-white font-semibold py-3 rounded-xl hover:bg-gray-100 transition"
+            onClick={handleDownloadBill}
+            className="flex-1 bg-green-600 text-white font-semibold py-3 rounded-xl hover:bg-green-700 transition"
             whileHover={{
               scale: 1.03,
               y: -2,
@@ -743,7 +1057,7 @@ const BookingConfirmation = () => {
               scale: 0.96,
             }}
           >
-            🖨️ Print Booking
+            📄 Download Bill
           </motion.button>
         </motion.div>
       </motion.div>

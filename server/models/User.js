@@ -9,12 +9,15 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
+      trim: true,
     },
 
     email: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
+      lowercase: true,
     },
 
     password: {
@@ -29,15 +32,18 @@ const userSchema = new mongoose.Schema(
     username: {
       type: String,
       default: "",
+      trim: true,
     },
 
     phone: {
       type: String,
       default: "",
+      trim: true,
     },
 
     dob: {
       type: Date,
+      default: null,
     },
 
     gender: {
@@ -63,26 +69,37 @@ const userSchema = new mongoose.Schema(
     zipCode: {
       type: String,
       default: "",
+      trim: true,
     },
 
     address: {
       type: String,
       default: "",
+      trim: true,
     },
 
     website: {
       type: String,
       default: "",
+      trim: true,
     },
 
     facebook: {
       type: String,
       default: "",
+      trim: true,
     },
 
     instagram: {
       type: String,
       default: "",
+      trim: true,
+    },
+
+    linkedin: {
+      type: String,
+      default: "",
+      trim: true,
     },
 
     about: {

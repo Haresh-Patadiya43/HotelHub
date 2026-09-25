@@ -1,13 +1,18 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion, AnimatePresence } from "motion/react";
+
+const API_URL = "http://localhost:5000/api/user/profile";
 
 const UserProfile = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   const [profileImage, setProfileImage] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const [profileData, setProfileData] = useState({
     fullName: "",
@@ -24,11 +29,8 @@ const UserProfile = () => {
     website: "",
     facebook: "",
     instagram: "",
-    linkedin: "",
     bio: "",
   });
-
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const [passwords, setPasswords] = useState({
     current: "",
@@ -36,9 +38,9 @@ const UserProfile = () => {
     confirm: "",
   });
 
-  // ==========================================
+  // =========================================================
   // FETCH PROFILE
-  // ==========================================
+  // =========================================================
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -50,14 +52,11 @@ const UserProfile = () => {
           return;
         }
 
-        const res = await axios.get(
-          "http://localhost:5000/api/user/profile",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await axios.get(API_URL, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         const user = res.data.user;
 
@@ -66,7 +65,9 @@ const UserProfile = () => {
           username: user.username || "",
           email: user.email || "",
           phone: user.phone || "",
-          dob: user.dob || "",
+          dob: user.dob
+            ? new Date(user.dob).toISOString().split("T")[0]
+            : "",
           gender: user.gender || "",
           country: user.country || "",
           state: user.state || "",
@@ -76,22 +77,28 @@ const UserProfile = () => {
           website: user.website || "",
           facebook: user.facebook || "",
           instagram: user.instagram || "",
-          linkedin: user.linkedin || "",
           bio: user.about || "",
         });
 
         setProfileImage(user.profileImage || null);
-      } catch (err) {
-        console.log("Profile Error:", err);
+      } catch (error) {
+        console.error("Profile Error:", error);
+
+        if (error.response?.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/");
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchProfile();
   }, [navigate]);
 
-  // ==========================================
+  // =========================================================
   // INPUT CHANGE
-  // ==========================================
+  // =========================================================
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -102,45 +109,59 @@ const UserProfile = () => {
     }));
   };
 
-  // ==========================================
+  // =========================================================
   // EMAIL VALIDATION
-  // ==========================================
+  // =========================================================
 
   const isEmailValid =
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email);
 
-  // ==========================================
+  // =========================================================
   // PROFILE COMPLETION
-  // ==========================================
+  // =========================================================
 
   const calculateCompletion = () => {
-    let filledFields = 0;
+    const fields = [
+      profileData.fullName,
+      profileData.username,
+      profileData.email,
+      profileData.phone,
+      profileData.dob,
+      profileData.gender,
+      profileData.country,
+      profileData.state,
+      profileData.city,
+      profileData.zip,
+      profileData.address,
+      profileData.website,
+      profileData.facebook,
+      profileData.instagram,
+      profileData.bio,
+      profileImage,
+    ];
 
-    const totalFields = Object.keys(profileData).length + 1;
+    const completed = fields.filter(
+      (field) => field && String(field).trim() !== ""
+    ).length;
 
-    if (profileImage) {
-      filledFields++;
-    }
-
-    Object.values(profileData).forEach((val) => {
-      if (val && val.trim() !== "") {
-        filledFields++;
-      }
-    });
-
-    return Math.round((filledFields / totalFields) * 100);
+    return Math.round((completed / fields.length) * 100);
   };
 
   const completionPercentage = calculateCompletion();
 
-  // ==========================================
+  // =========================================================
   // IMAGE UPLOAD
-  // ==========================================
+  // =========================================================
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
 
     if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
 
     if (file.size > 5 * 1024 * 1024) {
       alert("Image size should be less than 5MB.");
@@ -156,9 +177,9 @@ const UserProfile = () => {
     reader.readAsDataURL(file);
   };
 
-  // ==========================================
+  // =========================================================
   // REMOVE IMAGE
-  // ==========================================
+  // =========================================================
 
   const handleRemoveImage = () => {
     setProfileImage(null);
@@ -168,21 +189,28 @@ const UserProfile = () => {
     }
   };
 
-  // ==========================================
+  // =========================================================
   // SAVE PROFILE
-  // ==========================================
+  // =========================================================
 
   const handleSaveChanges = async () => {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.put(
-        "http://localhost:5000/api/user/profile",
+      if (!token) {
+        navigate("/");
+        return;
+      }
+
+      setIsSaving(true);
+
+      const response = await axios.put(
+        API_URL,
         {
           name: profileData.fullName,
           username: profileData.username,
           phone: profileData.phone,
-          dob: profileData.dob,
+          dob: profileData.dob || null,
           gender: profileData.gender,
           country: profileData.country,
           state: profileData.state,
@@ -192,9 +220,8 @@ const UserProfile = () => {
           website: profileData.website,
           facebook: profileData.facebook,
           instagram: profileData.instagram,
-          linkedin: profileData.linkedin,
           about: profileData.bio,
-          profileImage,
+          profileImage: profileImage || "",
         },
         {
           headers: {
@@ -203,16 +230,24 @@ const UserProfile = () => {
         }
       );
 
-      alert("Profile Updated Successfully!");
-    } catch (err) {
-      console.log(err);
-      alert("Error updating profile");
+      if (response.data.success) {
+        alert("Profile updated successfully!");
+      }
+    } catch (error) {
+      console.error("Update Profile Error:", error);
+
+      alert(
+        error.response?.data?.message ||
+          "Error updating profile."
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // ==========================================
+  // =========================================================
   // PASSWORD
-  // ==========================================
+  // =========================================================
 
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
@@ -229,8 +264,8 @@ const UserProfile = () => {
       return;
     }
 
-    if (passwords.new !== passwords.confirm) {
-      alert("New password and confirm password do not match!");
+    if (!passwords.new) {
+      alert("Please enter a new password.");
       return;
     }
 
@@ -239,7 +274,12 @@ const UserProfile = () => {
       return;
     }
 
-    alert("✅ Password changed successfully!");
+    if (passwords.new !== passwords.confirm) {
+      alert("New password and confirm password do not match.");
+      return;
+    }
+
+    alert("Password changed successfully!");
 
     setIsPasswordModalOpen(false);
 
@@ -250,42 +290,47 @@ const UserProfile = () => {
     });
   };
 
-  // ==========================================
+  // =========================================================
   // LOGOUT
-  // ==========================================
+  // =========================================================
 
   const handleLogout = () => {
-    if (window.confirm("Are you sure you want to log out?")) {
-      localStorage.removeItem("token");
-      navigate("/");
-    }
+    const confirmed = window.confirm(
+      "Are you sure you want to log out?"
+    );
+
+    if (!confirmed) return;
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/");
   };
 
-  // ==========================================
+  // =========================================================
   // SCROLL
-  // ==========================================
+  // =========================================================
 
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
 
-    if (element) {
-      const y =
-        element.getBoundingClientRect().top +
-        window.scrollY -
-        100;
+    if (!element) return;
 
-      window.scrollTo({
-        top: y,
-        behavior: "smooth",
-      });
-    }
+    const y =
+      element.getBoundingClientRect().top +
+      window.scrollY -
+      100;
+
+    window.scrollTo({
+      top: y,
+      behavior: "smooth",
+    });
   };
 
-  // ==========================================
-  // PLACEHOLDER ICON
-  // ==========================================
+  // =========================================================
+  // USER ICON
+  // =========================================================
 
-  const UserPlaceholderIcon = ({ className }) => (
+  const UserPlaceholderIcon = ({ className = "" }) => (
     <svg
       className={className}
       fill="none"
@@ -301,9 +346,9 @@ const UserProfile = () => {
     </svg>
   );
 
-  // ==========================================
-  // ANIMATION VARIANTS
-  // ==========================================
+  // =========================================================
+  // ANIMATIONS
+  // =========================================================
 
   const containerVariants = {
     hidden: {
@@ -312,8 +357,8 @@ const UserProfile = () => {
     visible: {
       opacity: 1,
       transition: {
-        duration: 0.5,
-        staggerChildren: 0.12,
+        duration: 0.4,
+        staggerChildren: 0.08,
       },
     },
   };
@@ -321,13 +366,13 @@ const UserProfile = () => {
   const itemVariants = {
     hidden: {
       opacity: 0,
-      y: 30,
+      y: 20,
     },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.55,
+        duration: 0.45,
         ease: "easeOut",
       },
     },
@@ -336,26 +381,46 @@ const UserProfile = () => {
   const sidebarVariants = {
     hidden: {
       opacity: 0,
-      x: -50,
+      x: -30,
     },
     visible: {
       opacity: 1,
       x: 0,
       transition: {
-        duration: 0.6,
+        duration: 0.5,
         ease: "easeOut",
       },
     },
   };
 
   const cardHover = {
-    y: -3,
-    boxShadow:
-      "0 12px 30px rgba(0, 0, 0, 0.08)",
+    y: -2,
+    boxShadow: "0 10px 25px rgba(0, 0, 0, 0.06)",
     transition: {
-      duration: 0.25,
+      duration: 0.2,
     },
   };
+
+  // =========================================================
+  // LOADING
+  // =========================================================
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+          <p className="text-sm text-gray-500">
+            Loading profile...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
     <motion.div
@@ -364,32 +429,48 @@ const UserProfile = () => {
       initial="hidden"
       animate="visible"
     >
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 pt-10">
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 pt-6 sm:pt-8 lg:pt-10">
 
-        <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-10">
+        {/* =====================================================
+            IMPORTANT:
+            sticky is ONLY active on lg screens.
+            This prevents sidebar overlapping content on mobile/tablet.
+        ====================================================== */}
 
-          {/* ==========================================
+        <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8">
+
+          {/* ===================================================
               SIDEBAR
-          ========================================== */}
+          =================================================== */}
 
           <motion.aside
             variants={sidebarVariants}
-            className="w-full lg:w-72 flex flex-col gap-6 sticky top-24 shrink-0"
+            className="
+              w-full
+              lg:w-72
+              flex
+              flex-col
+              gap-5
+              shrink-0
+              lg:sticky
+              lg:top-24
+              self-start
+            "
           >
+            {/* Navigation */}
+
             <motion.div
               whileHover={cardHover}
-              className="bg-white rounded-2xl shadow-sm p-4 flex flex-col space-y-1 border border-gray-100"
+              className="bg-white rounded-2xl shadow-sm p-3 sm:p-4 border border-gray-100"
             >
-              <motion.button
-                whileHover={{ x: 5 }}
-                whileTap={{ scale: 0.97 }}
+              <button
                 onClick={() =>
                   scrollToSection("personal-info")
                 }
-                className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl text-sm font-semibold transition-all"
               >
                 <svg
-                  className="w-5 h-5 mr-3"
+                  className="w-5 h-5 mr-3 shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -398,23 +479,21 @@ const UserProfile = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7-7"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7"
                   />
                 </svg>
 
                 Personal Info
-              </motion.button>
+              </button>
 
-              <motion.button
-                whileHover={{ x: 5 }}
-                whileTap={{ scale: 0.97 }}
+              <button
                 onClick={() =>
                   scrollToSection("address-details")
                 }
-                className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl text-sm font-semibold transition-all"
               >
                 <svg
-                  className="w-5 h-5 mr-3"
+                  className="w-5 h-5 mr-3 shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -434,18 +513,16 @@ const UserProfile = () => {
                 </svg>
 
                 Address
-              </motion.button>
+              </button>
 
-              <motion.button
-                whileHover={{ x: 5 }}
-                whileTap={{ scale: 0.97 }}
+              <button
                 onClick={() =>
                   scrollToSection("security-settings")
                 }
-                className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl text-sm font-semibold transition-all"
               >
                 <svg
-                  className="w-5 h-5 mr-3"
+                  className="w-5 h-5 mr-3 shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -459,18 +536,16 @@ const UserProfile = () => {
                 </svg>
 
                 Security
-              </motion.button>
+              </button>
 
-              <motion.button
-                whileHover={{ x: 5 }}
-                whileTap={{ scale: 0.97 }}
+              <button
                 onClick={() =>
                   scrollToSection("my-listings")
                 }
-                className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl text-sm font-semibold transition-all"
               >
                 <svg
-                  className="w-5 h-5 mr-3"
+                  className="w-5 h-5 mr-3 shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -484,18 +559,16 @@ const UserProfile = () => {
                 </svg>
 
                 My Listings
-              </motion.button>
+              </button>
 
               <hr className="my-2 border-gray-100" />
 
-              <motion.button
-                whileHover={{ x: 5 }}
-                whileTap={{ scale: 0.97 }}
+              <button
                 onClick={handleLogout}
-                className="flex items-center w-full px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl text-sm font-semibold transition-colors"
+                className="flex items-center w-full px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl text-sm font-semibold transition-all"
               >
                 <svg
-                  className="w-5 h-5 mr-3"
+                  className="w-5 h-5 mr-3 shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -509,10 +582,10 @@ const UserProfile = () => {
                 </svg>
 
                 Log Out
-              </motion.button>
+              </button>
             </motion.div>
 
-            {/* PROFILE COMPLETION */}
+            {/* Profile Completion */}
 
             <motion.div
               variants={itemVariants}
@@ -524,17 +597,12 @@ const UserProfile = () => {
                   Profile Completion
                 </h3>
 
-                <motion.span
-                  key={completionPercentage}
-                  initial={{ scale: 0.7, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="text-[#1A63F4] font-bold text-sm"
-                >
+                <span className="text-[#1A63F4] font-bold text-sm">
                   {completionPercentage}%
-                </motion.span>
+                </span>
               </div>
 
-              <div className="w-full bg-gray-100 rounded-full h-2 mb-4 overflow-hidden">
+              <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                 <motion.div
                   className="bg-[#1A63F4] h-full rounded-full"
                   initial={{ width: 0 }}
@@ -548,50 +616,34 @@ const UserProfile = () => {
                 />
               </div>
 
-              <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+              <p className="text-xs text-gray-500 mt-4 leading-relaxed">
                 Add details to reach 100% and earn the
-                'Elite Member' badge.
+                "Elite Member" badge.
               </p>
             </motion.div>
           </motion.aside>
 
-          {/* ==========================================
-              MAIN
-          ========================================== */}
+          {/* ===================================================
+              MAIN CONTENT
+          =================================================== */}
 
           <motion.main
             variants={containerVariants}
-            className="flex-1 w-full flex flex-col gap-6"
+            className="flex-1 w-full min-w-0 flex flex-col gap-6"
           >
-
-            {/* ==========================================
+            {/* =================================================
                 PROFILE HEADER
-            ========================================== */}
+            ================================================= */}
 
             <motion.div
               variants={itemVariants}
               whileHover={cardHover}
-              className="bg-white rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center border border-gray-100 gap-4"
+              className="bg-white rounded-2xl shadow-sm p-5 sm:p-6 border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5"
             >
-              <div className="flex items-center gap-4">
-
-                <motion.div
-                  className="relative"
-                  whileHover={{ scale: 1.06 }}
-                >
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="relative shrink-0">
                   {profileImage ? (
-                    <motion.img
-                      initial={{
-                        opacity: 0,
-                        scale: 0.7,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        scale: 1,
-                      }}
-                      transition={{
-                        duration: 0.4,
-                      }}
+                    <img
                       src={profileImage}
                       alt="Profile"
                       className="w-16 h-16 rounded-full object-cover border border-gray-200"
@@ -603,11 +655,7 @@ const UserProfile = () => {
                   )}
 
                   {completionPercentage > 80 && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute bottom-0 right-0 bg-green-500 p-0.5 rounded-full border-2 border-white"
-                    >
+                    <div className="absolute bottom-0 right-0 bg-green-500 p-0.5 rounded-full border-2 border-white">
                       <svg
                         className="w-3 h-3 text-white"
                         fill="none"
@@ -621,50 +669,25 @@ const UserProfile = () => {
                           d="M5 13l4 4L19 7"
                         />
                       </svg>
-                    </motion.div>
+                    </div>
                   )}
-                </motion.div>
+                </div>
 
-                <div>
-                  <motion.h1
-                    initial={{ opacity: 0, x: -15 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="text-2xl font-bold text-gray-900"
-                  >
-                    {profileData.fullName ||
-                      "Your Name"}
-                  </motion.h1>
+                <div className="min-w-0">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                    {profileData.fullName || "Your Name"}
+                  </h1>
 
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-gray-500">
-                      @{profileData.username ||
-                        "username"}
-                    </span>
-
-                    {completionPercentage === 100 && (
-                      <motion.span
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{
-                          opacity: 1,
-                          scale: 1,
-                        }}
-                        className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded"
-                      >
-                        Verified Host
-                      </motion.span>
-                    )}
-                  </div>
+                  <p className="text-sm text-gray-500 mt-1 truncate">
+                    @{profileData.username || "username"}
+                  </p>
                 </div>
               </div>
 
-              <motion.button
-                whileHover={{
-                  scale: 1.03,
-                  y: -2,
-                }}
-                whileTap={{ scale: 0.97 }}
+              <button
                 onClick={handleSaveChanges}
-                className="bg-[#0052CC] hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center shadow-sm w-full sm:w-auto justify-center"
+                disabled={isSaving}
+                className="bg-[#0052CC] hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center w-full sm:w-auto shrink-0"
               >
                 <svg
                   className="w-4 h-4 mr-2"
@@ -680,52 +703,40 @@ const UserProfile = () => {
                   />
                 </svg>
 
-                Save Changes
-              </motion.button>
+                {isSaving ? "Saving..." : "Save Changes"}
+              </button>
             </motion.div>
 
-            {/* ==========================================
+            {/* =================================================
                 PROFILE PHOTO
-            ========================================== */}
+            ================================================= */}
 
             <motion.div
               variants={itemVariants}
-              whileHover={cardHover}
-              className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100"
+              className="bg-white rounded-2xl shadow-sm p-5 sm:p-6 border border-gray-100"
             >
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
+              <h2 className="text-lg font-bold text-gray-900 mb-5">
                 Profile Photo
               </h2>
 
-              <div className="flex flex-col md:flex-row gap-6 items-center">
-
+              <div className="flex flex-col md:flex-row gap-5 items-stretch">
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/gif,image/webp"
                   ref={fileInputRef}
                   onChange={handleImageUpload}
                   className="hidden"
                 />
 
-                <motion.div
-                  whileHover={{
-                    scale: 1.01,
-                    borderColor: "#1A63F4",
-                  }}
+                <button
+                  type="button"
                   onClick={() =>
                     fileInputRef.current?.click()
                   }
-                  className="flex-1 w-full border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl p-8 flex flex-col items-center justify-center text-center transition-colors cursor-pointer"
+                  className="flex-1 min-h-[160px] border-2 border-dashed border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer"
                 >
-                  <motion.svg
-                    animate={{
-                      y: [0, -5, 0],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                    }}
-                    className="w-8 h-8 text-gray-400 mb-2"
+                  <svg
+                    className="w-9 h-9 text-gray-400 mb-3"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -736,7 +747,7 @@ const UserProfile = () => {
                       strokeWidth="2"
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                     />
-                  </motion.svg>
+                  </svg>
 
                   <p className="text-sm font-medium text-gray-700">
                     <span className="text-[#1A63F4]">
@@ -746,155 +757,142 @@ const UserProfile = () => {
                   </p>
 
                   <p className="text-xs text-gray-400 mt-1">
-                    PNG, JPG or GIF (max. 5MB)
+                    PNG, JPG, GIF or WEBP (max. 5MB)
                   </p>
-                </motion.div>
+                </button>
 
-                <div className="flex flex-col gap-3 w-full md:w-48">
-
-                  <motion.button
-                    whileHover={{
-                      scale: 1.03,
-                    }}
-                    whileTap={{
-                      scale: 0.97,
-                    }}
+                <div className="flex flex-row md:flex-col gap-3 md:w-48">
+                  <button
+                    type="button"
                     onClick={() =>
                       fileInputRef.current?.click()
                     }
-                    className="w-full bg-[#EBF3FE] text-[#1A63F4] font-semibold py-2.5 rounded-xl text-sm hover:bg-blue-100 transition-colors"
+                    className="flex-1 bg-[#EBF3FE] text-[#1A63F4] font-semibold py-2.5 rounded-xl text-sm hover:bg-blue-100 transition-colors"
                   >
                     Upload New
-                  </motion.button>
+                  </button>
 
-                  <motion.button
-                    whileHover={
-                      profileImage
-                        ? { scale: 1.03 }
-                        : {}
-                    }
-                    whileTap={
-                      profileImage
-                        ? { scale: 0.97 }
-                        : {}
-                    }
+                  <button
+                    type="button"
                     onClick={handleRemoveImage}
-                    className={`w-full font-semibold py-2.5 rounded-xl text-sm transition-colors border ${
+                    disabled={!profileImage}
+                    className={`flex-1 font-semibold py-2.5 rounded-xl text-sm transition-colors border ${
                       profileImage
                         ? "bg-white border-red-200 text-red-500 hover:bg-red-50"
                         : "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
                     }`}
-                    disabled={!profileImage}
                   >
                     Remove
-                  </motion.button>
-
+                  </button>
                 </div>
               </div>
             </motion.div>
 
-            {/* ==========================================
+            {/* =================================================
                 PERSONAL INFORMATION
-            ========================================== */}
+            ================================================= */}
 
             <motion.div
               id="personal-info"
               variants={itemVariants}
-              whileHover={cardHover}
-              className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 scroll-mt-24"
+              className="bg-white rounded-2xl shadow-sm p-5 sm:p-6 border border-gray-100 scroll-mt-24"
             >
               <h2 className="text-lg font-bold text-gray-900 mb-6">
                 Personal Information
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* FULL NAME */}
 
-                {[
-                  {
-                    name: "fullName",
-                    label: "Full Name",
-                    placeholder: "e.g. John Doe",
-                    type: "text",
-                  },
-                  {
-                    name: "username",
-                    label: "Username",
-                    placeholder: "e.g. johndoe123",
-                    type: "text",
-                  },
-                  {
-                    name: "phone",
-                    label: "Phone Number",
-                    placeholder: "+1 (000) 000-0000",
-                    type: "text",
-                  },
-                  {
-                    name: "dob",
-                    label: "Date of Birth",
-                    placeholder: "",
-                    type: "date",
-                  },
-                ].map((field) => (
-                  <motion.div
-                    key={field.name}
-                    whileHover={{ y: -2 }}
-                  >
-                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                      {field.label}
-                    </label>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                    Full Name
+                  </label>
 
-                    <motion.input
-                      whileFocus={{ scale: 1.01 }}
-                      name={field.name}
-                      value={profileData[field.name]}
-                      onChange={handleInputChange}
-                      type={field.type}
-                      placeholder={field.placeholder}
-                      className="w-full bg-[#F4F7FB] px-4 py-3 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1A63F4]"
-                    />
-                  </motion.div>
-                ))}
+                  <input
+                    name="fullName"
+                    value={profileData.fullName}
+                    onChange={handleInputChange}
+                    type="text"
+                    placeholder="e.g. John Doe"
+                    className="profile-input"
+                  />
+                </div>
+
+                {/* USERNAME */}
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                    Username
+                  </label>
+
+                  <input
+                    name="username"
+                    value={profileData.username}
+                    onChange={handleInputChange}
+                    type="text"
+                    placeholder="e.g. johndoe123"
+                    className="profile-input"
+                  />
+                </div>
+
+                {/* PHONE */}
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                    Phone Number
+                  </label>
+
+                  <input
+                    name="phone"
+                    value={profileData.phone}
+                    onChange={handleInputChange}
+                    type="text"
+                    placeholder="+91 00000 00000"
+                    className="profile-input"
+                  />
+                </div>
+
+                {/* DOB */}
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                    Date of Birth
+                  </label>
+
+                  <input
+                    name="dob"
+                    value={profileData.dob}
+                    onChange={handleInputChange}
+                    type="date"
+                    className="profile-input"
+                  />
+                </div>
 
                 {/* EMAIL */}
 
-                <motion.div
-                  whileHover={{ y: -2 }}
-                >
+                <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">
                     Email Address
                   </label>
 
-                  <div
-                    className={`relative border rounded-xl overflow-hidden ${
-                      isEmailValid &&
-                      profileData.email
-                        ? "border-green-300"
-                        : "border-transparent"
-                    }`}
-                  >
-                    <motion.input
-                      whileFocus={{ scale: 1.01 }}
+                  <div className="relative">
+                    <input
                       name="email"
                       value={profileData.email}
                       onChange={handleInputChange}
                       type="email"
                       placeholder="john@example.com"
-                      className="w-full bg-[#F4F7FB] pl-4 pr-10 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
+                      className={`profile-input pr-10 ${
+                        isEmailValid && profileData.email
+                          ? "ring-1 ring-green-400"
+                          : ""
+                      }`}
                     />
 
                     {isEmailValid &&
                       profileData.email && (
-                        <motion.div
-                          initial={{
-                            scale: 0,
-                            opacity: 0,
-                          }}
-                          animate={{
-                            scale: 1,
-                            opacity: 1,
-                          }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 rounded-full p-0.5"
-                        >
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 rounded-full p-0.5">
                           <svg
                             className="w-3 h-3 text-white"
                             fill="none"
@@ -908,7 +906,7 @@ const UserProfile = () => {
                               d="M5 13l4 4L19 7"
                             />
                           </svg>
-                        </motion.div>
+                        </div>
                       )}
                   </div>
 
@@ -922,156 +920,152 @@ const UserProfile = () => {
                       Please enter a valid email
                     </p>
                   ) : null}
-                </motion.div>
+                </div>
 
                 {/* GENDER */}
 
-                <motion.div
-                  whileHover={{ y: -2 }}
-                >
+                <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">
                     Gender
                   </label>
 
-                  <motion.select
-                    whileFocus={{ scale: 1.01 }}
+                  <select
                     name="gender"
                     value={profileData.gender}
                     onChange={handleInputChange}
-                    className="w-full bg-[#F4F7FB] px-4 py-3 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A63F4]"
+                    className="profile-input"
                   >
-                    <option value="" disabled hidden>
+                    <option value="">
                       Select Gender
                     </option>
-                    <option value="male">
-                      Male
-                    </option>
+                    <option value="male">Male</option>
                     <option value="female">
                       Female
                     </option>
-                    <option value="other">
-                      Other
-                    </option>
-                  </motion.select>
-                </motion.div>
-
+                    <option value="other">Other</option>
+                  </select>
+                </div>
               </div>
             </motion.div>
 
-            {/* ==========================================
+            {/* =================================================
                 ADDRESS
-            ========================================== */}
+            ================================================= */}
 
             <motion.div
               id="address-details"
               variants={itemVariants}
-              whileHover={cardHover}
-              className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 scroll-mt-24"
+              className="bg-white rounded-2xl shadow-sm p-5 sm:p-6 border border-gray-100 scroll-mt-24"
             >
               <h2 className="text-lg font-bold text-gray-900 mb-6">
                 Address Details
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {/* COUNTRY */}
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">
                     Country
                   </label>
 
-                  <motion.select
-                    whileFocus={{ scale: 1.01 }}
+                  <select
                     name="country"
                     value={profileData.country}
                     onChange={handleInputChange}
-                    className="w-full bg-[#F4F7FB] px-4 py-3 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A63F4]"
+                    className="profile-input"
                   >
-                    <option value="" disabled hidden>
+                    <option value="">
                       Select Country
                     </option>
-
                     <option value="us">
                       United States
                     </option>
-
-                    <option value="in">
-                      India
-                    </option>
-
+                    <option value="in">India</option>
                     <option value="uk">
                       United Kingdom
                     </option>
-                  </motion.select>
+                  </select>
                 </div>
 
-                {[
-                  {
-                    name: "state",
-                    label: "State / Region",
-                    placeholder: "e.g. Gujarat",
-                  },
-                  {
-                    name: "city",
-                    label: "City",
-                    placeholder: "e.g. Jamnagar",
-                  },
-                  {
-                    name: "zip",
-                    label: "ZIP Code",
-                    placeholder: "e.g. 361004",
-                  },
-                ].map((field) => (
-                  <div key={field.name}>
-                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                      {field.label}
-                    </label>
+                {/* STATE */}
 
-                    <motion.input
-                      whileFocus={{ scale: 1.01 }}
-                      name={field.name}
-                      value={profileData[field.name]}
-                      onChange={handleInputChange}
-                      type="text"
-                      placeholder={field.placeholder}
-                      className="w-full bg-[#F4F7FB] px-4 py-3 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1A63F4]"
-                    />
-                  </div>
-                ))}
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                    State / Region
+                  </label>
 
+                  <input
+                    name="state"
+                    value={profileData.state}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Gujarat"
+                    className="profile-input"
+                  />
+                </div>
+
+                {/* CITY */}
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                    City
+                  </label>
+
+                  <input
+                    name="city"
+                    value={profileData.city}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Jamnagar"
+                    className="profile-input"
+                  />
+                </div>
+
+                {/* ZIP */}
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                    ZIP Code
+                  </label>
+
+                  <input
+                    name="zip"
+                    value={profileData.zip}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 361004"
+                    className="profile-input"
+                  />
+                </div>
               </div>
 
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                Full Address
-              </label>
+              <div className="mt-5">
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  Full Address
+                </label>
 
-              <motion.input
-                whileFocus={{ scale: 1.005 }}
-                name="address"
-                value={profileData.address}
-                onChange={handleInputChange}
-                type="text"
-                placeholder="Street, Suite, Unit..."
-                className="w-full bg-[#F4F7FB] px-4 py-3 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1A63F4]"
-              />
+                <input
+                  name="address"
+                  value={profileData.address}
+                  onChange={handleInputChange}
+                  placeholder="Street, Suite, Unit..."
+                  className="profile-input"
+                />
+              </div>
             </motion.div>
 
-            {/* ==========================================
+            {/* =================================================
                 SOCIAL + ABOUT
-            ========================================== */}
+            ================================================= */}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <motion.div
                 variants={itemVariants}
-                whileHover={cardHover}
-                className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col"
+                className="bg-white rounded-2xl shadow-sm p-5 sm:p-6 border border-gray-100"
               >
                 <h2 className="text-lg font-bold text-gray-900 mb-5">
                   Social Profiles
                 </h2>
 
                 <div className="flex flex-col gap-4">
-
                   {[
                     {
                       name: "website",
@@ -1088,112 +1082,87 @@ const UserProfile = () => {
                       placeholder:
                         "instagram.com/username",
                     },
-                    {
-                      name: "linkedin",
-                      placeholder:
-                        "linkedin.com/in/username",
-                    },
                   ].map((social) => (
-                    <motion.div
+                    <div
                       key={social.name}
-                      whileHover={{ x: 4 }}
                       className="flex items-center gap-3"
                     >
                       <div className="w-10 h-10 bg-[#F4F7FB] rounded-full flex items-center justify-center text-[#1A63F4] shrink-0">
                         🌐
                       </div>
 
-                      <motion.input
-                        whileFocus={{ scale: 1.01 }}
+                      <input
                         name={social.name}
                         value={profileData[social.name]}
                         onChange={handleInputChange}
                         type="text"
                         placeholder={social.placeholder}
-                        className="w-full bg-[#F4F7FB] px-4 py-2.5 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1A63F4]"
+                        className="profile-input"
                       />
-                    </motion.div>
+                    </div>
                   ))}
-
                 </div>
               </motion.div>
 
               <motion.div
                 variants={itemVariants}
-                whileHover={cardHover}
-                className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col"
+                className="bg-white rounded-2xl shadow-sm p-5 sm:p-6 border border-gray-100"
               >
                 <h2 className="text-lg font-bold text-gray-900 mb-5">
                   About Me
                 </h2>
 
-                <motion.textarea
-                  whileFocus={{
-                    scale: 1.01,
-                  }}
+                <textarea
                   name="bio"
                   value={profileData.bio}
                   onChange={handleInputChange}
                   placeholder="Tell us a little bit about yourself..."
-                  className="w-full bg-[#F4F7FB] p-4 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1A63F4] resize-none h-full min-h-[140px]"
+                  className="w-full bg-[#F4F7FB] p-4 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1A63F4] resize-none min-h-[180px]"
                 />
               </motion.div>
-
             </div>
 
-            {/* ==========================================
+            {/* =================================================
                 SECURITY
-            ========================================== */}
+            ================================================= */}
 
             <motion.div
               id="security-settings"
               variants={itemVariants}
-              whileHover={cardHover}
-              className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 scroll-mt-24"
+              className="bg-white rounded-2xl shadow-sm p-5 sm:p-6 border border-gray-100 scroll-mt-24"
             >
               <h2 className="text-lg font-bold text-gray-900 mb-2">
                 Security Settings
               </h2>
 
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-gray-500 mb-5">
                 Manage your password and security preferences.
               </p>
 
-              <motion.button
-                whileHover={{
-                  scale: 1.03,
-                }}
-                whileTap={{
-                  scale: 0.97,
-                }}
+              <button
                 onClick={() =>
                   setIsPasswordModalOpen(true)
                 }
                 className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors"
               >
                 Change Password
-              </motion.button>
+              </button>
             </motion.div>
 
-            {/* ==========================================
+            {/* =================================================
                 ACCOUNT INSIGHTS
-            ========================================== */}
+            ================================================= */}
 
             <motion.div
               variants={itemVariants}
-              whileHover={cardHover}
-              className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 mb-8"
+              className="bg-white rounded-2xl shadow-sm p-5 sm:p-6 border border-gray-100"
             >
               <h2 className="text-lg font-bold text-gray-900 mb-5">
                 Account Insights
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-
-                <motion.div
-                  whileHover={{ scale: 1.03 }}
-                  className="bg-[#F4F7FB] rounded-xl p-4"
-                >
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                <div className="bg-[#F4F7FB] rounded-xl p-4">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                     Member Since
                   </p>
@@ -1201,12 +1170,9 @@ const UserProfile = () => {
                   <p className="text-lg font-bold text-gray-900">
                     Today
                   </p>
-                </motion.div>
+                </div>
 
-                <motion.div
-                  whileHover={{ scale: 1.03 }}
-                  className="bg-[#F4F7FB] rounded-xl p-4"
-                >
+                <div className="bg-[#F4F7FB] rounded-xl p-4">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                     Profile Strength
                   </p>
@@ -1215,6 +1181,8 @@ const UserProfile = () => {
                     className={`text-lg font-bold ${
                       completionPercentage === 100
                         ? "text-green-600"
+                        : completionPercentage < 50
+                        ? "text-red-500"
                         : "text-orange-500"
                     }`}
                   >
@@ -1224,12 +1192,9 @@ const UserProfile = () => {
                       ? "Good"
                       : "Excellent"}
                   </p>
-                </motion.div>
+                </div>
 
-                <motion.div
-                  whileHover={{ scale: 1.03 }}
-                  className="bg-[#F4F7FB] rounded-xl p-4"
-                >
+                <div className="bg-[#F4F7FB] rounded-xl p-4">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                     Verification Status
                   </p>
@@ -1243,12 +1208,12 @@ const UserProfile = () => {
                     }`}
                   >
                     <div
-                      className={`${
+                      className={`rounded-full p-0.5 mr-1.5 ${
                         isEmailValid &&
                         profileData.email
                           ? "bg-green-500"
                           : "bg-gray-300"
-                      } rounded-full p-0.5 mr-1.5`}
+                      }`}
                     >
                       ✓
                     </div>
@@ -1258,38 +1223,30 @@ const UserProfile = () => {
                       ? "Email Verified"
                       : "Unverified"}
                   </div>
-                </motion.div>
-
+                </div>
               </div>
             </motion.div>
-
           </motion.main>
         </div>
       </div>
 
-      {/* ==========================================
+      {/* =====================================================
           PASSWORD MODAL
-      ========================================== */}
+      ====================================================== */}
 
       <AnimatePresence>
         {isPasswordModalOpen && (
           <motion.div
-            initial={{
-              opacity: 0,
-            }}
-            animate={{
-              opacity: 1,
-            }}
-            exit={{
-              opacity: 0,
-            }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4"
           >
             <motion.div
               initial={{
                 opacity: 0,
-                scale: 0.85,
-                y: 30,
+                scale: 0.9,
+                y: 20,
               }}
               animate={{
                 opacity: 1,
@@ -1298,26 +1255,12 @@ const UserProfile = () => {
               }}
               exit={{
                 opacity: 0,
-                scale: 0.85,
-                y: 30,
-              }}
-              transition={{
-                duration: 0.25,
-                ease: "easeOut",
+                scale: 0.9,
+                y: 20,
               }}
               className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl relative"
             >
-
-              {/* CLOSE */}
-
-              <motion.button
-                whileHover={{
-                  rotate: 90,
-                  scale: 1.1,
-                }}
-                whileTap={{
-                  scale: 0.9,
-                }}
+              <button
                 onClick={() =>
                   setIsPasswordModalOpen(false)
                 }
@@ -1336,24 +1279,13 @@ const UserProfile = () => {
                     d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
-              </motion.button>
+              </button>
 
-              <motion.h2
-                initial={{
-                  opacity: 0,
-                  x: -15,
-                }}
-                animate={{
-                  opacity: 1,
-                  x: 0,
-                }}
-                className="text-xl font-bold text-gray-900 mb-6"
-              >
+              <h2 className="text-xl font-bold text-gray-900 mb-6">
                 Change Password
-              </motion.h2>
+              </h2>
 
               <div className="space-y-4 mb-8">
-
                 {[
                   {
                     name: "current",
@@ -1374,73 +1306,77 @@ const UserProfile = () => {
                       "Confirm new password",
                   },
                 ].map((field) => (
-                  <motion.div
-                    key={field.name}
-                    initial={{
-                      opacity: 0,
-                      y: 10,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      y: 0,
-                    }}
-                  >
+                  <div key={field.name}>
                     <label className="block text-xs font-bold text-gray-700 mb-1.5">
                       {field.label}
                     </label>
 
-                    <motion.input
-                      whileFocus={{
-                        scale: 1.01,
-                      }}
+                    <input
                       type="password"
                       name={field.name}
                       value={passwords[field.name]}
                       onChange={handlePasswordChange}
                       placeholder={field.placeholder}
-                      className="w-full bg-[#F4F7FB] px-4 py-3 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1A63F4]"
+                      className="profile-input"
                     />
-                  </motion.div>
+                  </div>
                 ))}
-
               </div>
 
               <div className="flex gap-3">
-
-                <motion.button
-                  whileHover={{
-                    scale: 1.03,
-                  }}
-                  whileTap={{
-                    scale: 0.97,
-                  }}
+                <button
                   onClick={() =>
                     setIsPasswordModalOpen(false)
                   }
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-xl text-sm font-semibold transition-colors"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-xl text-sm font-semibold"
                 >
                   Cancel
-                </motion.button>
+                </button>
 
-                <motion.button
-                  whileHover={{
-                    scale: 1.03,
-                  }}
-                  whileTap={{
-                    scale: 0.97,
-                  }}
+                <button
                   onClick={handleSavePassword}
-                  className="flex-1 bg-[#0052CC] hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-semibold transition-colors"
+                  className="flex-1 bg-[#0052CC] hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-semibold"
                 >
                   Save Password
-                </motion.button>
-
+                </button>
               </div>
-
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* =====================================================
+          LOCAL INPUT STYLE
+      ====================================================== */}
+
+      <style>{`
+        .profile-input {
+          width: 100%;
+          background: #f4f7fb;
+          padding: 0.75rem 1rem;
+          border-radius: 0.75rem;
+          font-size: 0.875rem;
+          color: #111827;
+          border: 1px solid transparent;
+          outline: none;
+          transition: all 0.2s ease;
+        }
+
+        .profile-input::placeholder {
+          color: #9ca3af;
+        }
+
+        .profile-input:focus {
+          border-color: #1a63f4;
+          box-shadow: 0 0 0 2px rgba(26, 99, 244, 0.12);
+        }
+
+        @media (max-width: 1023px) {
+          .profile-input {
+            min-height: 46px;
+          }
+        }
+      `}</style>
     </motion.div>
   );
 };

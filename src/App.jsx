@@ -24,6 +24,7 @@ import LoginModal from "./pages/LoginModal";
 import Booking from "./pages/Booking";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import MyBookings from "./componets/MyBookings";
+import Payment from "./pages/Payment";
 
 // =====================================================
 // ADMIN PAGES
@@ -53,11 +54,7 @@ import "./App.css";
 // This fixes:
 // "Cannot create components during render"
 // =====================================================
-const MainLayout = ({
-  isLoggedIn,
-  onLoginClick,
-  onLogout,
-}) => {
+const MainLayout = ({ isLoggedIn, onLoginClick, onLogout }) => {
   return (
     <>
       <Navbar
@@ -82,9 +79,7 @@ function App() {
   // ===================================================
   const [showLogin, setShowLogin] = useState(false);
 
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    !!localStorage.getItem("token")
-  );
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
 
   // ===================================================
   // USER LOGOUT
@@ -131,9 +126,7 @@ function App() {
 
           {/* Message */}
           <div>
-            <h3 className="text-lg font-bold text-gray-800">
-              Logged Out 👋
-            </h3>
+            <h3 className="text-lg font-bold text-gray-800">Logged Out 👋</h3>
 
             <p className="text-sm text-gray-500">
               You have been logged out successfully
@@ -194,7 +187,6 @@ function App() {
           ALL ROUTES
       ================================================= */}
       <Routes>
-
         {/* =================================================
             USER WEBSITE
         ================================================= */}
@@ -208,72 +200,39 @@ function App() {
           }
         >
           {/* HOME */}
-          <Route
-            path="/"
-            element={<Home />}
-          />
+          <Route path="/" element={<Home />} />
 
           {/* HOTELS */}
-          <Route
-            path="/Hotels"
-            element={<Hotels />}
-          />
+          <Route path="/Hotels" element={<Hotels />} />
 
           {/* HOTEL DETAILS */}
-          <Route
-            path="/hotel/:id"
-            element={<HotelDetails />}
-          />
+          <Route path="/hotel/:id" element={<HotelDetails />} />
 
           {/* USER PROFILE */}
-          <Route
-            path="/profile"
-            element={<UserProfile />}
-          />
+          <Route path="/profile" element={<UserProfile />} />
 
           {/* EXPERIENCES */}
-          <Route
-            path="/experiences"
-            element={<Experiences />}
-          />
+          <Route path="/experiences" element={<Experiences />} />
 
           {/* ABOUT US */}
-          <Route
-            path="/aboutus"
-            element={<AboutUs />}
-          />
+          <Route path="/aboutus" element={<AboutUs />} />
 
           {/* OFFERS */}
-          <Route
-            path="/offers"
-            element={<Offers />}
-          />
+          <Route path="/offers" element={<Offers />} />
 
           {/* CONTACT US */}
-          <Route
-            path="/contactus"
-            element={<ContactUs />}
-          />
+          <Route path="/contactus" element={<ContactUs />} />
 
           {/* BOOKING */}
-          <Route
-            path="/booking"
-            element={<Booking />}
-          />
+          <Route path="/booking" element={<Booking />} />
+
+          {/* PAYMENT */}
+          <Route path="/payment" element={<Payment />} />
 
           {/* MY BOOKINGS */}
           <Route
             path="/my-bookings"
-            element={
-              isLoggedIn ? (
-                <MyBookings />
-              ) : (
-                <Navigate
-                  to="/"
-                  replace
-                />
-              )
-            }
+            element={isLoggedIn ? <MyBookings /> : <Navigate to="/" replace />}
           />
 
           {/* BOOKING CONFIRMATION */}
@@ -287,10 +246,7 @@ function App() {
             ADMIN LOGIN
             /admin
         ================================================= */}
-        <Route
-          path="/admin"
-          element={<AdminLogin />}
-        />
+        <Route path="/admin" element={<AdminLogin />} />
 
         {/* =================================================
             PROTECTED ADMIN AREA
@@ -305,40 +261,22 @@ function App() {
           }
         >
           {/* ADMIN DASHBOARD */}
-          <Route
-            path="/admin/dashboard"
-            element={<AdminPanel />}
-          />
+          <Route path="/admin/dashboard" element={<AdminPanel />} />
 
           {/* ADMIN HOTELS */}
-          <Route
-            path="/admin/hotels"
-            element={<AdminHotels />}
-          />
+          <Route path="/admin/hotels" element={<AdminHotels />} />
 
           {/* ADD HOTEL */}
-          <Route
-            path="/admin/hotels/add"
-            element={<AdminHotels />}
-          />
+          <Route path="/admin/hotels/add" element={<AdminHotels />} />
 
           {/* ADMIN ROOMS */}
-          <Route
-            path="/admin/rooms"
-            element={<AdminRooms />}
-          />
+          <Route path="/admin/rooms" element={<AdminRooms />} />
 
           {/* ADMIN BOOKINGS */}
-          <Route
-            path="/admin/bookings"
-            element={<AdminBookings />}
-          />
+          <Route path="/admin/bookings" element={<AdminBookings />} />
 
           {/* ADMIN USERS */}
-          <Route
-            path="/admin/users"
-            element={<AdminUsers />}
-          />
+          <Route path="/admin/users" element={<AdminUsers />} />
         </Route>
 
         {/* =================================================
@@ -347,26 +285,13 @@ function App() {
         ================================================= */}
         <Route
           path="/admin/panel"
-          element={
-            <Navigate
-              to="/admin/dashboard"
-              replace
-            />
-          }
+          element={<Navigate to="/admin/dashboard" replace />}
         />
 
         {/* =================================================
             UNKNOWN ROUTE
         ================================================= */}
-        <Route
-          path="*"
-          element={
-            <Navigate
-              to="/"
-              replace
-            />
-          }
-        />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
       {/* =================================================
