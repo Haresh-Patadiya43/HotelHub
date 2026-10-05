@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
+import { apiUrl } from "../../src/api";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = apiUrl("/api");
 
 const AdminBookings = () => {
   const [bookings, setBookings] = useState([]);

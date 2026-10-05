@@ -1,6 +1,7 @@
 import "../index.css";
 import  { useState } from "react";
 import toast from "react-hot-toast";
+import { apiUrl } from "../api";
 
 const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const [isSignup, setIsSignup] = useState(false);
@@ -19,7 +20,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleForgotPassword = async () => {
-    const res = await fetch("http://localhost:5000/api/auth/forgot-password", {
+    const res = await fetch(apiUrl("/api/auth/forgot-password"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -50,7 +51,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/reset-password", {
+      const res = await fetch(apiUrl("/api/auth/reset-password"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -100,8 +101,8 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const handleSubmit = async () => {
     try {
       const url = isSignup
-        ? "http://localhost:5000/api/auth/register"
-        : "http://localhost:5000/api/auth/login";
+        ? apiUrl("/api/auth/register")
+        : apiUrl("/api/auth/login");
 
       const body = isSignup
         ? {

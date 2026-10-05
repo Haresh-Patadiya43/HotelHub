@@ -9,6 +9,7 @@ import {
   ChevronRight,
   CalendarDays,
 } from "lucide-react";
+import { apiUrl } from "../../src/api";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -29,7 +30,7 @@ const AdminUsers = () => {
         setLoading(true);
         setError("");
 
-        const response = await fetch("http://localhost:5000/api/user/admin/users");
+        const response = await fetch(apiUrl("/api/user/admin/users"));
         const data = await response.json();
 
         if (!response.ok || !data.success) {
@@ -120,7 +121,7 @@ const AdminUsers = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/user/admin/users/${user.id}`,
+        apiUrl(`/api/user/admin/users/${user.id}`),
         { method: "DELETE" }
       );
       const data = await response.json();

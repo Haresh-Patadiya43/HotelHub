@@ -2,6 +2,7 @@ import  { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import Loader from "../componets/Loader";
+import { apiUrl } from "../api";
 
 const HotelDetails = () => {
   const { id } = useParams();
@@ -87,7 +88,7 @@ const HotelDetails = () => {
         // =========================
 
         const hotelResponse = await fetch(
-          `http://localhost:5000/api/hotels/${id}`
+          apiUrl(`/api/hotels/${id}`)
         );
 
         const hotelData = await hotelResponse.json();
@@ -106,7 +107,7 @@ const HotelDetails = () => {
         // =========================
 
         const roomResponse = await fetch(
-          `http://localhost:5000/api/rooms/hotel/${id}`
+          apiUrl(`/api/rooms/hotel/${id}`)
         );
 
         const roomData = await roomResponse.json();

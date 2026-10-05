@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion, AnimatePresence } from "motion/react";
+import { apiUrl } from "../api";
 
-const API_URL = "http://localhost:5000/api/user/profile";
+const API_URL = apiUrl("/api/user/profile");
 
 const UserProfile = () => {
   const navigate = useNavigate();

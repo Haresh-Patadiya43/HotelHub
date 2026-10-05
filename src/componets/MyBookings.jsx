@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiUrl } from "../api";
 
 const MyBookings = () => {
   const navigate = useNavigate();
@@ -76,7 +77,7 @@ const MyBookings = () => {
       }
 
       const response = await fetch(
-        "http://localhost:5000/api/bookings/my-bookings",
+        apiUrl("/api/bookings/my-bookings"),
         {
           method: "GET",
           headers: {
@@ -125,7 +126,7 @@ const MyBookings = () => {
       setCancellingId(bookingId);
 
       const response = await fetch(
-        `http://localhost:5000/api/bookings/${bookingId}/cancel`,
+        apiUrl(`/api/bookings/${bookingId}/cancel`),
         {
           method: "PATCH",
           headers: {

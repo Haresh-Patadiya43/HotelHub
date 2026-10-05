@@ -4,6 +4,18 @@ const router = express.Router();
 const Hotel = require("../models/Hotel");
 const upload = require("../middleware/upload");
 
+const getPublicUrl = () => {
+  if (process.env.PUBLIC_URL) {
+    return process.env.PUBLIC_URL.replace(/\/+$/, "");
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("PUBLIC_URL must be set to the backend's public URL.");
+  }
+
+  return `http://localhost:${process.env.PORT || 5000}`;
+};
+
 // ==========================================
 // GET ALL HOTELS
 // ==========================================
@@ -88,7 +100,7 @@ router.post("/", upload.single("image"), async (req, res) => {
       reviews: Number(req.body.reviews) || 0,
       description: req.body.description,
       amenities,
-      image: `http://localhost:5000/uploads/${req.file.filename}`,
+      image: `${getPublicUrl()}/uploads/${req.file.filename}`,
     });
 
     res.status(201).json({

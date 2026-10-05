@@ -17,6 +17,7 @@ import {
   X,
   AlertCircle,
 } from "lucide-react";
+import { apiUrl } from "../api";
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -108,7 +109,7 @@ const ContactUs = () => {
       setIsSending(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/contact/send",
+        apiUrl("/api/contact/send"),
         {
           method: "POST",
           headers: {

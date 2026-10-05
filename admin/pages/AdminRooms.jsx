@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiUrl } from "../../src/api";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = apiUrl("/api");
 
 const ROOM_TYPES = [
   "Standard Room",

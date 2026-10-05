@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Loader from "../componets/Loader";
 import video from "../assets/hotel-page-vedio.mp4";
+import { apiUrl } from "../api";
 
 const Hotels = () => {
   // ==============================
@@ -46,7 +47,7 @@ const Hotels = () => {
   useEffect(() => {
     const fetchHotels = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/hotels");
+        const response = await fetch(apiUrl("/api/hotels"));
 
         if (!response.ok) {
           throw new Error("Failed to fetch hotels");

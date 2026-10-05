@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
+import { apiUrl } from "../api";
 
-const API_URL = "http://localhost:5000/api/hotels";
+const API_URL = apiUrl("/api/hotels");
 
 /* =========================================================
    SEARCH BOX

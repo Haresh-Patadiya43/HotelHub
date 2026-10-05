@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { apiUrl } from "../../src/api";
 
 const AdminPanel = () => {
   const [stats, setStats] = useState({
@@ -41,16 +42,16 @@ const AdminPanel = () => {
         usersRes,
         bookingStatsRes,
       ] = await Promise.allSettled([
-        fetch("http://localhost:5000/api/hotels", { headers }),
+        fetch(apiUrl("/api/hotels"), { headers }),
 
-        fetch("http://localhost:5000/api/rooms", { headers }),
+        fetch(apiUrl("/api/rooms"), { headers }),
 
-        fetch("http://localhost:5000/api/bookings/admin", { headers }),
+        fetch(apiUrl("/api/bookings/admin"), { headers }),
 
-        fetch("http://localhost:5000/api/user/admin/users", { headers }),
+        fetch(apiUrl("/api/user/admin/users"), { headers }),
 
         // Revenue / Profit API
-        fetch("http://localhost:5000/api/bookings/admin/stats", {
+        fetch(apiUrl("/api/bookings/admin/stats"), {
           headers,
         }),
       ]);
